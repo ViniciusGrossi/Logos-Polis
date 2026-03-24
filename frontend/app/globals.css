@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-serif: var(--font-playfair-display);
+
+  --color-obsidian: #09090b;
+  --color-charcoal: #18181b;
+  --color-concrete: #f4f4f5;
+  --color-acid: #ccff00;
+  --color-danger: #ff3300;
+  --color-surface: #0a0a0a;
+  --color-panel: #111111;
+  --color-border: #222222;
+  --color-navy: #0f172a;
+  --color-royal: #1e3a8a;
+
+  --animate-float: float 8s ease-in-out infinite;
+  --animate-spin-slow: spin 3s linear infinite;
+  --animate-slide-up: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes slideUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+}
+
+body {
+  background-color: var(--color-obsidian);
+  color: #e5e5e5;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-obsidian);
+}
+::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 4px;
+}
+
+/* Flashlight Effect */
+.flashlight-card {
+  position: relative;
+  background-color: rgba(23, 23, 23, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+.flashlight-card::before {
+  content: "";
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
+  border-radius: inherit;
+  background: radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.04), transparent 40%);
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+  z-index: 3;
+}
+.flashlight-border {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(204, 255, 0, 0.5), transparent 40%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.flashlight-card:hover::before,
+.flashlight-card:hover .flashlight-border {
+  opacity: 1;
+}
+
+/* Glass Panel */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+/* Border Beam */
+.btn-beam-container {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  border-radius: 9999px;
+}
+.beam-border {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  background: conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(204,255,0,0.8) 60deg, transparent 120deg);
+  animation: var(--animate-spin-slow);
+  transition: opacity 0.3s;
+}
+.btn-beam-container:hover .beam-border {
+  opacity: 1;
+}
+.btn-inner {
+  position: relative;
+  z-index: 10;
+  margin: 1px;
+  border-radius: inherit;
+}

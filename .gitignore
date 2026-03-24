@@ -1,0 +1,17 @@
+# References and private data
+Referencias/
+.agent/
+
+# Next.js
+.next/
+out/
+
+# Node modules
+node_modules/
+
+# Environment variables
+.env*.local
+
+# OS files
+.DS_Store
+Thumbs.db
