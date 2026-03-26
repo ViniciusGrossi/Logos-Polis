@@ -10,9 +10,10 @@ interface MetricsCardProps {
   icon: LucideIcon;
   trend: string;
   trendUp: boolean;
+  context?: string;
 }
 
-export function MetricsCard({ title, value, icon: Icon, trend, trendUp }: MetricsCardProps) {
+export function MetricsCard({ title, value, icon: Icon, trend, trendUp, context }: MetricsCardProps) {
   return (
     <FlashlightCard className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -21,15 +22,18 @@ export function MetricsCard({ title, value, icon: Icon, trend, trendUp }: Metric
           <Icon className="w-4 h-4 text-neutral-300" />
         </div>
       </div>
-      <div className="flex items-baseline gap-3">
-        <span className="font-mono text-4xl text-white">{value}</span>
-        <span className={cn(
-          "flex items-center text-xs font-mono",
-          trendUp ? "text-acid" : "text-danger"
-        )}>
-          {trendUp ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
-          {trend}
-        </span>
+      <div className="flex flex-col">
+        <div className="flex items-baseline gap-3">
+          <span className="font-mono text-4xl text-white">{value}</span>
+          <span className={cn(
+            "flex items-center text-xs font-mono px-2 py-0.5 rounded-full",
+            trendUp ? "bg-acid/10 text-acid" : "bg-danger/10 text-danger"
+          )}>
+            {trendUp ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
+            {trend}
+          </span>
+        </div>
+        {context && <span className="text-[10px] font-mono text-neutral-500 mt-2">{context}</span>}
       </div>
     </FlashlightCard>
   );

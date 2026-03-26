@@ -13,15 +13,17 @@ export function FlashlightCard({ children, className }: FlashlightCardProps) {
 
   return (
     <div 
-      className={cn("flashlight-card rounded-2xl p-6", className)}
+      className={cn("flashlight-card rounded-2xl p-6 relative overflow-hidden", className)}
       onMouseMove={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       }}
       style={{ "--mouse-x": `${mousePos.x}px`, "--mouse-y": `${mousePos.y}px` } as React.CSSProperties}
     >
-      <div className="flashlight-border rounded-2xl"></div>
-      <div className="relative z-10">{children}</div>
+      <div className="flashlight-border rounded-2xl pointer-events-none"></div>
+      <div className="relative z-10 h-full w-full flex flex-col">
+        {children}
+      </div>
     </div>
   );
 }
