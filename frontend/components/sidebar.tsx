@@ -153,18 +153,29 @@ export function Sidebar() {
       </div>
 
       {/* User Footer */}
-      <div className="p-4 border-t border-border mt-auto">
-        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
-          <div className="w-10 h-10 rounded-full bg-navy border border-blue-500/30 flex items-center justify-center text-blue-400 font-serif font-bold">
-            VJ
+      <div className="p-4 border-t border-border mt-auto flex items-center justify-between">
+        <div className="flex items-center gap-3 w-full">
+          <div className="w-10 h-10 rounded-full bg-navy border border-blue-500/30 flex items-center justify-center text-blue-400 font-serif font-bold shrink-0">
+            A
           </div>
-          <div>
-            <p className="text-sm font-medium text-white">Ver. João Silva</p>
-            <p className="text-xs text-neutral-500 font-mono">Gabinete #04</p>
+          <div className="flex-1 overflow-hidden">
+            <p className="text-sm font-medium text-white truncate">Administrador</p>
+            <p className="text-xs text-neutral-500 font-mono">Status: Ativo</p>
           </div>
+          <button 
+            onClick={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' });
+              window.location.href = '/login';
+            }}
+            title="Sair do Sistema"
+            className="p-2 text-neutral-500 hover:text-danger rounded-md hover:bg-white/5 transition-colors shrink-0"
+          >
+            <CloseIcon className="w-4 h-4" />
+          </button>
         </div>
       </div>
       </aside>
     </>
+
   );
 }
