@@ -6,29 +6,35 @@ import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    const endpoint = isRegistering ? '/api/auth/register' : '/api/auth/login';
+    const bodyArgs = isRegistering ? { name, email, password } : { email, password };
+
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(bodyArgs),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Erro ao fazer login');
+        throw new Error(data.error || 'Erro na operação de acesso');
       }
 
       router.push('/');
@@ -42,7 +48,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#131313] text-[#e5e2e1] flex font-inter">
+    <div className="fixed inset-0 z-[100] bg-[#131313] text-[#e5e2e1] flex font-sans">
       {/* 
         Extreme Asymmetry (65 / 35 Split)
         Left: Editorial Narrative (65%)
@@ -56,18 +62,18 @@ export default function LoginPage() {
           <h1 className="text-[#abd600] font-serif font-black italic tracking-tighter text-3xl">LOGOS POLIS</h1>
           <div className="mt-6 flex items-center gap-4">
             <span className="font-mono text-xs tracking-[0.2em] text-[#c4c9ae] px-2 py-1 bg-[#1c1b1b] rounded-sm">TERMINAL 01</span>
-            <span className="font-mono text-xs tracking-[0.1em] text-[#c4c9ae]/70">SECURE INTELLIGENCE</span>
+            <span className="font-mono text-xs tracking-[0.1em] text-[#c4c9ae]/70">INTELIGÊNCIA SOBERANA</span>
           </div>
         </div>
 
         <div className="relative z-10 mb-24">
           <h2 className="font-serif text-8xl xl:text-9xl leading-[0.85] tracking-tight font-black text-white mix-blend-difference mb-8">
-            CURATE <br/>
-            <span className="italic font-light text-[#abd600]">THE</span><br/>
-            LANDSCAPE.
+            DOMINE <br/>
+            <span className="italic font-light text-[#abd600]">O</span><br/>
+            CENÁRIO.
           </h2>
-          <p className="font-mono text-sm max-w-md text-[#c4c9ae] leading-relaxed">
-            SYSTEMA DE INTELIGÊNCIA EXECUTIVA. <br />
+          <p className="font-mono text-sm max-w-md text-[#c4c9ae] leading-relaxed uppercase">
+            SISTEMA DE INTELIGÊNCIA EXECUTIVA. <br />
             MONITORAMENTO ESTRATÉGICO DE TERRITÓRIO E INFLUÊNCIA.
           </p>
         </div>
@@ -88,34 +94,52 @@ export default function LoginPage() {
           <div className="absolute top-0 left-0 w-1 h-full bg-[#abd600]" />
 
           <div className="mb-12">
-            <h3 className="font-mono text-xl font-bold text-white mb-2 tracking-tight">AUTHORIZATION</h3>
-            <p className="font-mono text-xs text-[#c4c9ae]">CODENAME: LOGOS_POLIS</p>
+             <h3 className="font-mono text-xl font-bold text-white mb-2 tracking-tight">
+               {isRegistering ? 'CREDENCIAMENTO' : 'AUTORIZAÇÃO'}
+             </h3>
+             <p className="font-mono text-xs text-[#c4c9ae]">CODENAME: LOGOS_POLIS</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-6 flex flex-col">
             {error && (
               <div className="font-mono text-[11px] text-[#ffb4ab] bg-[#93000a]/20 p-3 rounded-sm border border-[#93000a]/50">
                 [ERR] {error}
               </div>
             )}
 
+            {isRegistering && (
+              <div className="space-y-2 group">
+                <label className="block font-mono text-[10px] tracking-widest text-[#c4c9ae] uppercase">
+                  Nome do Operador
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-[#131313] border-b-2 border-transparent focus:border-[#abd600] text-white font-mono text-sm p-3 outline-none transition-all placeholder-[#444934] rounded-t-sm"
+                  placeholder="Nome Completo"
+                  required={isRegistering}
+                />
+              </div>
+            )}
+
             <div className="space-y-2 group">
               <label className="block font-mono text-[10px] tracking-widest text-[#c4c9ae] uppercase">
-                Access Email
+                Endereço de Acesso
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-[#131313] border-b-2 border-transparent focus:border-[#abd600] text-white font-mono text-sm p-3 outline-none transition-all placeholder-[#444934] rounded-t-sm"
-                placeholder="operative@logospolis.com.br"
+                placeholder="operativo@logospolis.com.br"
                 required
               />
             </div>
 
             <div className="space-y-2 group">
               <label className="block font-mono text-[10px] tracking-widest text-[#c4c9ae] uppercase">
-                Access Code
+                Código de Acesso
               </label>
               <input
                 type="password"
@@ -130,19 +154,30 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full group relative flex items-center justify-center p-4 bg-[#abd600] hover:bg-[#c6f332] text-[#161e00] font-mono font-bold tracking-widest text-xs uppercase transition-all rounded-sm overflow-hidden"
+              className="w-full group relative flex items-center justify-center p-4 bg-[#abd600] hover:bg-[#c6f332] text-[#161e00] font-mono font-bold tracking-widest text-xs uppercase transition-all rounded-sm overflow-hidden mt-2"
             >
               <span className="relative z-10 flex items-center gap-2">
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    AUTHENTICATING...
+                    {isRegistering ? 'PROCESSANDO...' : 'AUTENTICANDO...'}
                   </>
                 ) : (
-                  'ENTER PLATFORM'
+                  isRegistering ? 'SOLICITAR CREDENCIAL' : 'INGRESSAR NO SISTEMA'
                 )}
               </span>
               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => {
+                setError('');
+                setIsRegistering(!isRegistering);
+              }}
+              className="mt-4 font-mono text-[10px] text-center w-full uppercase text-[#444934] hover:text-[#c4c9ae] tracking-widest transition-colors"
+            >
+              [ {isRegistering ? 'Alternar para acesso existente' : 'Requisitar nova credencial'} ]
             </button>
           </form>
 

@@ -5,10 +5,10 @@ import { createSession } from "@/lib/session";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, role = "user", organization_id } = await req.json();
+    const { name, email, password } = await req.json();
 
     if (!name || !email || !password) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json({ error: "Nome, e-mail e código de acesso são obrigatórios." }, { status: 400 });
     }
 
     // Check if user already exists
@@ -19,42 +19,42 @@ export async function POST(req: Request) {
       .single();
 
     if (existingUser) {
-      return NextResponse.json({ error: "Email already registered" }, { status: 400 });
+      return NextResponse.json({ error: "E-mail já está em uso na plataforma." }, { status: 409 });
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const password_hash = await bcrypt.hash(password, 10);
 
     // Insert user into custom logos_polis.users table
-    const { data: user, error } = await supabase
+    const { data: user, error: insertError } = await supabase
       .from('users')
       .insert([
         { 
           name, 
           email, 
-          password_hash: hashedPassword, 
-          role,
-          organization_id: organization_id || null, // Optional, can be null
-          status: 'ativo'
+          password_hash, 
+          role: 'user', // Default role for new signups
+          status: 'ativo' 
         }
       ])
       .select()
       .single();
 
-    if (error) {
-      console.error("Supabase insert error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (insertError || !user) {
+      console.error(insertError);
+      return NextResponse.json({ error: "Erro interno ao provisionar conta." }, { status: 500 });
     }
 
-    // Create session cookie
+    // Create session cookie so the user is auto-logged in
     await createSession(user.id, user.role);
 
     return NextResponse.json({
-      message: "User registered successfully",
+      message: "Credencial estabelecida com sucesso.",
       user: { id: user.id, name: user.name, email: user.email, role: user.role }
     }, { status: 201 });
 
   } catch (err: any) {
-    return NextResponse.json({ error: "Server Error", details: err.message }, { status: 500 });
+    console.error(err);
+    return NextResponse.json({ error: "Erro catastrófico de conexão", details: err.message }, { status: 500 });
   }
 }
