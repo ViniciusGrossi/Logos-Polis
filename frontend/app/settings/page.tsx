@@ -1,12 +1,13 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Settings, User, Users, Zap, 
   Shield, Bell, Database, Save,
-  LogOut, ChevronRight
+  LogOut, ChevronRight, CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FlashlightCard } from "@/components/ui/flashlight-card";
 
 const settingsSections = [
   { id: "personal", title: "Perfil Pessoal", icon: User, description: "Gerencie seus dados de acesso e preferências." },
@@ -17,6 +18,209 @@ const settingsSections = [
 ];
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("personal");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      console.error("Erro ao fazer logout", error);
+      setIsLoggingOut(false);
+    }
+  };
+
+  const renderPersonal = () => (
+    <section className="space-y-6 animate-fade-in">
+      <h3 className="font-mono text-xs text-neutral-400 uppercase tracking-widest border-l-2 border-acid pl-4">Acesso Institucional</h3>
+      
+      <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Nome Completo</label>
+          <input type="text" defaultValue="Operador Alpha" className="w-full bg-charcoal border border-white/5 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-acid transition-colors" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">E-mail Operacional</label>
+          <input type="email" defaultValue="operativo@logospolis.com.br" disabled className="w-full bg-charcoal/50 border border-white/5 rounded-sm p-3 text-sm text-neutral-400 focus:outline-none focus:border-acid transition-colors font-mono cursor-not-allowed" />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Nova Senha</label>
+        <input type="password" placeholder="••••••••" className="w-full max-w-sm bg-charcoal border border-white/5 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-acid transition-colors font-mono" />
+      </div>
+    </section>
+  );
+
+  const renderCabinet = () => (
+    <div className="space-y-8 animate-fade-in">
+      <section className="space-y-6">
+        <h3 className="font-mono text-xs text-neutral-400 uppercase tracking-widest border-l-2 border-acid pl-4">Gabinete Político</h3>
+        
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Nome do Mandato</label>
+            <input type="text" defaultValue="Ver. João Silva" className="w-full bg-charcoal border border-white/5 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-acid transition-colors" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Ano de Início</label>
+            <input type="text" defaultValue="2025" className="w-full bg-charcoal border border-white/5 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-acid transition-colors font-mono" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+            <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Biografia Institucional (AI Context)</label>
+            <textarea rows={4} className="w-full bg-charcoal border border-white/5 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-acid transition-colors font-sans resize-none" defaultValue="Focado em saúde pública e transparência na gestão municipal. Representante do Setor Sul e articulador de projetos para juventude..."></textarea>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <h3 className="font-mono text-xs text-neutral-400 uppercase tracking-widest border-l-2 border-neutral-700 pl-4">Preferências de Alerta</h3>
+        
+        <div className="space-y-3">
+          {[
+            "Notificar novos contatos identificados",
+            "Alerta de pico de demandas territoriais",
+            "Sumário diário de IA via e-mail",
+            "Bloquear mensagens fora do horário comercial"
+          ].map((item, i) => (
+            <div key={item} className="flex items-center justify-between p-4 bg-charcoal/50 border border-white/5 rounded-xl">
+              <span className="text-sm text-neutral-300">{item}</span>
+              <div className={cn(
+                "w-10 h-5 rounded-full relative cursor-pointer pt-0.5 px-0.5 transition-colors",
+                i < 2 ? "bg-acid/20" : "bg-neutral-800"
+              )}>
+                <div className={cn(
+                  "w-4 h-4 bg-white rounded-full transition-transform",
+                  i < 2 ? "translate-x-5 shadow-[0_0_10px_rgba(204,255,0,0.5)]" : "translate-x-0"
+                )} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+
+  const renderTeam = () => (
+    <section className="space-y-6 animate-fade-in">
+      <div className="flex justify-between items-center">
+        <h3 className="font-mono text-xs text-neutral-400 uppercase tracking-widest border-l-2 border-acid pl-4">Controle de Operadores</h3>
+        <button className="px-4 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-white/5 text-xs font-mono uppercase text-white transition-all rounded-sm">
+          + Adicionar Assessor
+        </button>
+      </div>
+
+      <div className="border border-white/5 rounded-xl bg-charcoal overflow-hidden divide-y divide-white/5">
+        {[
+          { name: "Vinícius Grossi", role: "Super Admin", status: "online", last: "Agora" },
+          { name: "Mariana Souza", role: "Chefe de Gabinete", status: "offline", last: "Há 2 horas" },
+          { name: "Carlos Andrade", role: "Assessor Externo", status: "offline", last: "Ontem" },
+        ].map(member => (
+          <div key={member.name} className="p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center font-mono text-xs border border-white/10">
+                {member.name.charAt(0)}
+              </div>
+              <div>
+                <p className="text-sm text-white font-medium">{member.name}</p>
+                <p className="text-xs text-neutral-500 font-mono">{member.role}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="flex items-center justify-end gap-2">
+                <span className={cn("w-1.5 h-1.5 rounded-full", member.status === 'online' ? 'bg-acid shadow-[0_0_5px_theme(colors.acid.DEFAULT)]' : 'bg-neutral-600')} />
+                <span className="text-[10px] tracking-widest font-mono uppercase text-neutral-400">{member.status}</span>
+              </div>
+              <p className="text-[10px] text-neutral-600 mt-1">Último Acesso: {member.last}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
+  const renderAI = () => (
+    <section className="space-y-6 animate-fade-in">
+      <h3 className="font-mono text-xs text-neutral-400 uppercase tracking-widest border-l-2 border-acid pl-4">Thresholds e Modelos</h3>
+      
+      <div className="p-6 border border-white/5 bg-charcoal/50 rounded-xl space-y-4">
+         <div className="flex items-center justify-between">
+           <div>
+             <h4 className="text-sm font-medium text-white">Modelo de Linguagem Central (LLM)</h4>
+             <p className="text-xs text-neutral-500">Motor processador de demandas e classificação.</p>
+           </div>
+           <select className="bg-neutral-900 border border-white/10 text-xs font-mono p-2 rounded-sm text-white focus:outline-none focus:border-acid">
+              <option>Claude 3.5 Sonnet (Recomendado)</option>
+              <option>GPT-4o (Alta Precisão)</option>
+              <option>Llama 3 (Rápido)</option>
+           </select>
+         </div>
+      </div>
+
+      <div className="space-y-3">
+        {[
+          "Classificação automática de Sentimento",
+          "Responder automaticamente Dúvidas Frequentes via Zap",
+          "Sugerir Micro-Campanhas no Dashboard baseadas em denúncias"
+        ].map((item, i) => (
+          <div key={item} className="flex items-center gap-3 p-4 bg-charcoal/50 border border-white/5 rounded-xl cursor-pointer hover:bg-charcoal transition-colors">
+             <div className={cn("flex-shrink-0 w-5 h-5 rounded-sm border flex items-center justify-center", i < 2 ? "bg-acid border-acid" : "border-neutral-600")}>
+               {i < 2 && <CheckCircle2 className="w-3 h-3 text-black" />}
+             </div>
+             <span className="text-sm text-neutral-300">{item}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
+  const renderData = () => (
+    <section className="space-y-6 animate-fade-in">
+      <h3 className="font-mono text-xs text-neutral-400 uppercase tracking-widest border-l-2 border-acid pl-4">Conectores de Campo</h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-6 bg-charcoal border border-white/5 hover:border-acid/30 transition-colors rounded-xl space-y-4">
+           <div className="flex items-center gap-3">
+             <div className="p-2 bg-[#25D366]/10 rounded-lg text-[#25D366]">
+                <Database className="w-5 h-5" />
+             </div>
+             <h4 className="text-sm font-medium text-white">WhatsApp Business API</h4>
+           </div>
+           <p className="text-xs text-neutral-500 leading-relaxed">Conectado e recebendo mensagens em tempo real para o número final 1234.</p>
+           <button className="text-xs font-mono uppercase text-[#25D366] hover:text-white transition-colors">Gerenciar Conexão →</button>
+        </div>
+
+        <div className="p-6 bg-charcoal border border-white/5 hover:border-acid/30 transition-colors rounded-xl space-y-4">
+           <div className="flex items-center gap-3">
+             <div className="p-2 bg-neutral-800 rounded-lg text-white">
+                <Shield className="w-5 h-5" />
+             </div>
+             <h4 className="text-sm font-medium text-white">Exportação TSE Base</h4>
+           </div>
+           <p className="text-xs text-neutral-500 leading-relaxed">Sincronização inativa. É necessário validar o token de acesso à base externa.</p>
+           <button className="text-xs font-mono uppercase text-acid hover:text-white transition-colors">Autenticar Sistema →</button>
+        </div>
+      </div>
+    </section>
+  );
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "personal": return renderPersonal();
+      case "cabinet": return renderCabinet();
+      case "team": return renderTeam();
+      case "ai": return renderAI();
+      case "data": return renderData();
+      default: return renderPersonal();
+    }
+  };
+
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-12 animate-slide-up">
       {/* Editorial Header */}
@@ -42,79 +246,38 @@ export default function SettingsPage() {
           {settingsSections.map((section) => (
             <button 
               key={section.id}
+              onClick={() => setActiveTab(section.id)}
               className={cn(
                 "w-full text-left p-4 rounded-xl transition-all duration-200 flex items-center justify-between group",
-                section.id === "cabinet" ? "bg-white/5 text-white" : "text-neutral-500 hover:text-white hover:bg-white/[0.02]"
+                section.id === activeTab ? "bg-white/5 text-white" : "text-neutral-500 hover:text-white hover:bg-white/[0.02]"
               )}
             >
               <div className="flex items-center gap-3">
-                <section.icon className={cn("w-4 h-4", section.id === "cabinet" ? "text-acid" : "text-neutral-600")} />
+                <section.icon className={cn("w-4 h-4", section.id === activeTab ? "text-acid" : "text-neutral-600")} />
                 <span className="text-sm font-medium">{section.title}</span>
               </div>
-              <ChevronRight className={cn("w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity", section.id === "cabinet" && "opacity-100")} />
+              <ChevronRight className={cn("w-4 h-4 transition-opacity", section.id === activeTab ? "opacity-100" : "opacity-0 group-hover:opacity-100")} />
             </button>
           ))}
           
           <div className="pt-8">
-            <button className="w-full text-left p-4 rounded-xl text-danger hover:bg-danger/5 transition-all flex items-center gap-3">
+            <button 
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="w-full text-left p-4 rounded-xl text-danger hover:bg-danger/5 transition-all flex items-center gap-3 opacity-90 hover:opacity-100 disabled:opacity-50"
+            >
                <LogOut className="w-4 h-4" />
-               <span className="text-sm font-medium">Sair do Sistema</span>
+               <span className="text-sm font-medium">{isLoggingOut ? "Encerrando..." : "Sair do Sistema"}</span>
             </button>
           </div>
         </nav>
 
         {/* Content Area - Minimal & Sharp */}
-        <div className="lg:col-span-3 space-y-8 pb-20">
+        <div className="lg:col-span-3 pb-20">
           
-          <div className="space-y-8">
-            <section className="space-y-6">
-              <h3 className="font-mono text-xs text-neutral-400 uppercase tracking-widest border-l-2 border-acid pl-4">Gabinete Político</h3>
-              
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Nome do Mandato</label>
-                  <input type="text" defaultValue="Ver. João Silva" className="w-full bg-charcoal border border-white/5 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-acid transition-colors" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Ano de Início</label>
-                  <input type="text" defaultValue="2025" className="w-full bg-charcoal border border-white/5 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-acid transition-colors font-mono" />
-                </div>
-              </div>
+          {renderContent()}
 
-              <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Biografia Institucional (AI Context)</label>
-                  <textarea rows={4} className="w-full bg-charcoal border border-white/5 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-acid transition-colors font-sans resize-none" defaultValue="Focado em saúde pública e transparência na gestão municipal. Representante do Setor Sul e articulador de projetos para juventude..."></textarea>
-                </div>
-            </section>
-
-            <section className="space-y-6">
-              <h3 className="font-mono text-xs text-neutral-400 uppercase tracking-widest border-l-2 border-neutral-700 pl-4">Preferências de Alerta</h3>
-              
-              <div className="space-y-3">
-                {[
-                  "Notificar novos contatos identificados",
-                  "Alerta de pico de demandas territoriais",
-                  "Sumário diário de IA via e-mail",
-                  "Bloquear mensagens fora do horário comercial"
-                ].map((item, i) => (
-                  <div key={item} className="flex items-center justify-between p-4 bg-charcoal/50 border border-white/5 rounded-xl">
-                    <span className="text-sm text-neutral-300">{item}</span>
-                    <div className={cn(
-                      "w-10 h-5 rounded-full relative cursor-pointer pt-0.5 px-0.5 transition-colors",
-                      i < 2 ? "bg-acid/20" : "bg-neutral-800"
-                    )}>
-                      <div className={cn(
-                        "w-4 h-4 bg-white rounded-full transition-transform",
-                        i < 2 ? "translate-x-5 shadow-[0_0_10px_rgba(204,255,0,0.5)]" : "translate-x-0"
-                      )} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          <div className="p-8 border border-white/5 bg-surface rounded-3xl space-y-4">
+          <div className="mt-12 p-8 border border-white/5 bg-surface rounded-3xl space-y-4">
              <div className="flex items-center gap-3">
                 <div className="p-3 bg-acid/10 border border-acid/20 rounded-xl">
                    <Zap className="w-5 h-5 text-acid" />
