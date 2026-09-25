@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
 
     // The RPC creates the hash in Postgres without exposing the users table.
-    const { data, error } = await supabase.rpc('register_logos_polis_user', {
+    const { data, error } = await supabase.schema('public').rpc('register_logos_polis_user', {
       p_name: name,
       p_email: email,
       p_password: password,

@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
 
     // The RPC verifies the bcrypt hash without exposing password_hash through the API.
-    const { data, error } = await supabase.rpc('authenticate_logos_polis_user', {
+    const { data, error } = await supabase.schema('public').rpc('authenticate_logos_polis_user', {
       p_email: email,
       p_password: password,
     });
