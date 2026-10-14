@@ -37,7 +37,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <QueryProvider>
             <Sidebar />
-            <main className="lg:ml-64 ml-0 min-h-screen pt-16 lg:pt-0">
+            <main data-polis-main className="lg:ml-64 ml-0 min-h-screen pt-16 lg:pt-0">
               {children}
             </main>
           </QueryProvider>

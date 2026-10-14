@@ -1,0 +1,10 @@
+import { copyFile, mkdir } from "node:fs/promises";
+import { createRequire } from "node:module";
+import path from "node:path";
+const require = createRequire(import.meta.url);
+const vendor = path.dirname(require.resolve("maplibre-gl/package.json"));
+const target = path.resolve("public/vendor/atlas");
+await mkdir(target, { recursive: true });
+await copyFile(path.join(vendor, "dist/maplibre-gl-worker.mjs"), path.join(target, "maplibre-worker.mjs"));
+await copyFile(path.join(vendor, "LICENSE.txt"), path.join(target, "maplibre-LICENSE.txt"));
+console.log("Atlas: MapLibre worker and license prepared locally.");

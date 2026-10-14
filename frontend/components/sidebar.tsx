@@ -31,6 +31,7 @@ const mainNavItems = [
 ];
 
 const stratNavItems = [
+  { name: "Atlas Eleitoral", href: "/atlas", icon: MapIcon },
   { name: "Micro-campanhas", href: "/campanhas", icon: Target },
   { name: "Equipe & Lideranças", href: "/influenciadores", icon: UserCheck },
   { name: "Concorrência", href: "/concorrencia", icon: Sword },
@@ -51,6 +52,7 @@ export function Sidebar() {
     <>
       {/* Mobile Toggle Button */}
       <button 
+        data-polis-mobile-toggle
         onClick={toggleSidebar}
         className="fixed top-4 left-4 z-50 p-2 bg-charcoal border border-white/10 rounded-lg lg:hidden"
       >
@@ -65,7 +67,7 @@ export function Sidebar() {
         />
       )}
 
-      <aside className={cn(
+      <aside data-polis-sidebar className={cn(
         "fixed left-0 top-0 h-screen w-64 bg-charcoal border-r border-border flex flex-col z-40 transition-transform duration-300 ease-in-out lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
