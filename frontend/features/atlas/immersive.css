@@ -1,0 +1,221 @@
+/* Atlas workbench. Scoped to the module: the Polis shell and other features retain their tokens. */
+.atlas-root.atlas-immersive {
+  --atlas-glass: color-mix(in srgb, var(--atlas-panel-soft) 88%, transparent);
+  --atlas-glass-border: color-mix(in srgb, var(--atlas-text) 12%, transparent);
+  --atlas-glass-shadow: 0 14px 42px color-mix(in srgb, var(--atlas-bg) 65%, transparent), inset 0 1px 0 color-mix(in srgb, var(--atlas-text) 5%, transparent);
+  --atlas-radius-shell: 14px;
+  --atlas-radius-control: 8px;
+  --atlas-space-unit: 8px;
+  --atlas-z-map: 0;
+  --atlas-z-tools: 10;
+  --atlas-z-selection: 20;
+  --atlas-z-header: 30;
+  --atlas-z-analysis: 40;
+  position: relative;
+  isolation: isolate;
+  height: calc(100dvh - var(--atlas-top-offset, 28px));
+  min-height: 640px;
+  padding: 0;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+.atlas-immersive [hidden] { display: none !important; }
+.atlas-immersive button:focus-visible, .atlas-immersive a:focus-visible, .atlas-immersive input:focus-visible, .atlas-immersive select:focus-visible { outline: 2px solid var(--atlas-cyan); outline-offset: 3px; }
+.atlas-skip { position: absolute; top: -100px; left: 16px; z-index: var(--atlas-z-analysis); padding: 12px; background: var(--atlas-panel); color: var(--atlas-text); }
+.atlas-skip:focus { top: 12px; }
+.atlas-immersive-stage { position: absolute; inset: 0; z-index: var(--atlas-z-map); }
+.atlas-immersive-stage > .atlas-map, .atlas-immersive-stage .atlas-curtain, .atlas-immersive-stage .atlas-curtain .atlas-map { height: 100%; min-height: 0; border: 0; border-radius: 0; }
+.atlas-immersive-stage > .atlas-map { position: absolute; inset: 0; }
+.atlas-map-ambient { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 63% 40%, transparent 35%, color-mix(in srgb, var(--atlas-bg) 50%, transparent) 100%); }
+.atlas-immersive-header, .atlas-immersive-navigation, .atlas-immersive-reading, .atlas-immersive-legend, .atlas-immersive-timeline, .atlas-immersive-panel-toggle, .atlas-immersive-analysis-toggle, .atlas-immersive-analysis, .atlas-immersive .atlas-map-controls, .atlas-immersive .atlas-state-preview {
+  background: var(--atlas-glass);
+  border: 1px solid var(--atlas-glass-border);
+  border-radius: var(--atlas-radius-shell);
+  box-shadow: var(--atlas-glass-shadow);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.atlas-immersive-header { position: absolute; top: 20px; left: 24px; right: 24px; z-index: var(--atlas-z-header); display: flex; align-items: center; gap: 20px; padding: 12px 16px; }
+.atlas-immersive-header .atlas-brand { gap: 12px; min-width: max-content; text-decoration: none; }
+.atlas-immersive-header .atlas-brand b, .atlas-immersive-header .atlas-brand h1 { margin: 0; font: 550 18px/1.3 var(--atlas-font-sans), sans-serif; letter-spacing: -.02em; }
+.atlas-immersive-header .atlas-brand small { font-size: 10px; letter-spacing: .16em; }
+.atlas-immersive-header .atlas-brand-icon { width: 42px; height: 42px; border-radius: 10px; background: color-mix(in srgb, var(--atlas-cyan) 5%, var(--atlas-panel)); color: var(--atlas-cyan); border-color: color-mix(in srgb, var(--atlas-cyan) 25%, var(--atlas-border)); }
+.atlas-immersive-header .atlas-search { margin-left: auto; width: min(30vw, 300px); max-width: none; height: 44px; }
+.atlas-immersive-header .atlas-search input { font-size: 13px; }
+.atlas-immersive-header .atlas-search-results { top: calc(100% + 10px); background: var(--atlas-panel-soft); max-height: min(60dvh, 420px); overflow-y: auto; }
+.atlas-immersive .atlas-button, .atlas-immersive .atlas-text-button { min-height: 44px; font-size: 13px; border-radius: var(--atlas-radius-control); }
+.atlas-immersive .atlas-button { gap: 8px; }
+.atlas-immersive .atlas-button:hover { border-color: color-mix(in srgb, var(--atlas-cyan) 50%, var(--atlas-border)); background: color-mix(in srgb, var(--atlas-cyan) 7%, var(--atlas-panel)); }
+.atlas-immersive-version { display: flex; align-items: center; gap: 8px; color: var(--atlas-muted); font: 10px/1.5 var(--atlas-font-mono), monospace; white-space: nowrap; }
+.atlas-immersive-version i { width: 5px; height: 5px; border-radius: 50%; background: var(--atlas-cyan); }
+.atlas-immersive-navigation { position: absolute; top: 112px; left: 24px; z-index: var(--atlas-z-header); display: flex; gap: 3px; padding: 4px; }
+.atlas-immersive-navigation button { min-height: 40px; padding: 8px 16px; border: 0; border-radius: var(--atlas-radius-control); background: transparent; color: var(--atlas-muted); font: 500 13px var(--atlas-font-sans), sans-serif; cursor: pointer; transition: background 180ms, color 180ms; }
+.atlas-immersive-navigation button[aria-current=page] { color: var(--atlas-cyan); background: color-mix(in srgb, var(--atlas-cyan) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--atlas-cyan) 22%, transparent); }
+.atlas-immersive-navigation button:hover { color: var(--atlas-text); }
+.atlas-immersive-reading { position: absolute; left: 24px; top: 174px; bottom: 108px; width: 320px; z-index: var(--atlas-z-tools); overflow-y: auto; overscroll-behavior: contain; padding: 20px; scrollbar-width: thin; scrollbar-color: var(--atlas-border) transparent; }
+.atlas-immersive-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--atlas-glass-border); }
+.atlas-immersive-tools label { color: var(--atlas-muted); font-size: 11px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.atlas-immersive-tools label:first-child { grid-column: 1 / -1; }
+.atlas-immersive-tools select { width: 100%; min-height: 42px; min-width: 0; color: var(--atlas-text); background: color-mix(in srgb, var(--atlas-panel) 80%, transparent); border: 1px solid var(--atlas-glass-border); border-radius: var(--atlas-radius-control); padding: 8px; font-size: 12px; cursor: pointer; }
+.atlas-immersive-tools option, .atlas-immersive-tools optgroup { background: var(--atlas-panel); color: var(--atlas-text); }
+.atlas-office-tag { display:flex;align-items:center;min-height:42px;color:var(--atlas-text);font-size:13px; }
+.atlas-immersive-tools .atlas-checkbox { grid-column: 1 / -1; flex-direction: row; align-items: center; }
+.atlas-immersive-tools .atlas-checkbox input { accent-color: var(--atlas-cyan); }
+.atlas-immersive-tools .atlas-scope-path { grid-column: 1 / -1; padding: 0; border: 0; margin: 0; font-size: 12px; }
+.atlas-immersive .atlas-insight { padding: 0; background: none; border: 0; box-shadow: none; }
+.atlas-immersive .atlas-insight h2, .atlas-immersive-reading > h2 { margin: 8px 0; font: 400 36px/1.14 var(--atlas-font-serif), serif; letter-spacing: -.025em; text-wrap: balance; }
+.atlas-immersive .atlas-eyebrow { font-size: 10px; letter-spacing: .12em; }
+.atlas-immersive .atlas-helper, .atlas-immersive .atlas-method-note { font-size: 12px; line-height: 1.65; color: var(--atlas-muted); }
+.atlas-immersive .atlas-result-list { margin: 18px 0; }
+.atlas-immersive .atlas-result-list > div { padding: 9px 0; }
+.atlas-immersive .atlas-result-list > div > div:first-child > span { font-size: 13px; }
+.atlas-immersive .atlas-result-list b { font-size: 20px; font-weight: 550; }
+.atlas-immersive .atlas-result-list small { font-size: 11px; }
+.atlas-immersive .atlas-result-track { height: 3px; border-radius: 4px; margin: 8px 0 4px; }
+.atlas-immersive .atlas-insight-fact { margin: 18px 0; padding: 16px 0; border-color: var(--atlas-glass-border); }
+.atlas-immersive .atlas-insight-fact strong { font-size: 32px; font-weight: 450; }
+.atlas-immersive .atlas-insight-fact span, .atlas-immersive .atlas-insight-fact p, .atlas-immersive .atlas-mini-metrics span { font-size: 11px; line-height: 1.6; }
+.atlas-immersive .atlas-mini-metrics { gap: 16px; margin: 16px 0 20px; }
+.atlas-immersive .atlas-mini-metrics b { font-size: 16px; font-weight: 500; }
+.atlas-immersive .atlas-notice { margin: 8px 0 18px; padding: 10px; font-size: 12px; line-height: 1.6; }
+.atlas-immersive-panel-toggle, .atlas-immersive-analysis-toggle { position: absolute; z-index: var(--atlas-z-header); display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 12px; color: var(--atlas-text); font-size: 12px; cursor: pointer; }
+.atlas-immersive-panel-toggle { top: 112px; left: 420px; }
+.atlas-immersive-analysis-toggle { right: 24px; top: 112px; }
+.atlas-immersive-panel-toggle:hover, .atlas-immersive-analysis-toggle:hover { color: var(--atlas-cyan); }
+.atlas-immersive .atlas-map-controls { right: 24px; top: 50%; bottom: auto; transform: translateY(-50%); display: flex; flex-direction: column; padding: 5px; gap: 3px; }
+.atlas-immersive .atlas-map-controls button { width: 42px; height: 42px; border: 0; background: transparent; color: var(--atlas-muted); border-radius: var(--atlas-radius-control); }
+.atlas-immersive .atlas-map-controls button:hover, .atlas-immersive .atlas-map-controls button[aria-pressed=true] { color: var(--atlas-cyan); background: color-mix(in srgb, var(--atlas-cyan) 7%, transparent); }
+.atlas-immersive .atlas-map-coordinate { left: 370px; bottom: 104px; font: 10px var(--atlas-font-mono), monospace; letter-spacing: .025em; }
+.atlas-immersive .atlas-map-tooltip { top: 174px; right: 90px; left: auto; bottom: auto; max-width: 260px; font-size: 12px; border-radius: 12px; background: var(--atlas-glass); border: 1px solid var(--atlas-glass-border); backdrop-filter: blur(16px); }
+.atlas-immersive .atlas-map-label { top: 172px; left: 370px; font-size: 12px; background: transparent; border: 0; }
+.atlas-immersive .atlas-state-label { font-size: 11px; border-radius: 4px; background: color-mix(in srgb, var(--atlas-bg) 50%, transparent); }
+.atlas-map-detail-status { position: absolute; left: 50%; top: 165px; transform: translateX(-50%); padding: 8px 12px; background: var(--atlas-panel); border: 1px solid var(--atlas-border); border-radius: 8px; color: var(--atlas-muted); font-size: 12px; max-width: 70%; }
+.atlas-immersive-legend { position: absolute; right: 24px; bottom: 26px; width: 248px; z-index: var(--atlas-z-tools); padding: 14px; }
+.atlas-immersive-legend .atlas-legend { border: 0; padding: 0; margin: 0; background: transparent; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.atlas-immersive-legend .atlas-legend > span { font-size: 11px; gap: 7px; white-space: normal; }
+.atlas-immersive-legend .atlas-legend > span i { width: 7px; height: 7px; }
+.atlas-immersive-legend .atlas-legend > small { grid-column:1 / -1; font-size:11px; line-height:1.5; }
+.atlas-immersive-legend .atlas-legend-title { display: block; margin-bottom: 10px; font-size: 12px; font-weight: 500; }
+.atlas-immersive-legend > small { display: block; margin-top: 10px; color: var(--atlas-muted); font-size: 11px; line-height: 1.5; }
+.atlas-immersive-dock { position: absolute; left: 370px; right: 290px; bottom: 24px; z-index: var(--atlas-z-tools); display: flex; justify-content: center; pointer-events: none; }
+.atlas-immersive-timeline { pointer-events: auto; display: flex; align-items: center; gap: 4px; padding: 5px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.atlas-immersive-timeline button { min-width: 70px; min-height: 52px; flex-shrink: 0; text-align: left; padding: 8px 12px; background: transparent; border: 0; border-radius: var(--atlas-radius-control); color: var(--atlas-text); cursor: pointer; transition: background 180ms, color 180ms; }
+.atlas-immersive-timeline button b { display: block; font-size: 14px; font-weight: 550; }
+.atlas-immersive-timeline button small { display: block; font-size: 10px; color: var(--atlas-muted); white-space: nowrap; }
+.atlas-immersive-timeline button[aria-pressed=true] { background: var(--atlas-text); color: var(--atlas-bg); }
+.atlas-immersive-timeline button[aria-pressed=true] small { color: var(--atlas-panel); }
+.atlas-immersive-timeline button:hover:not([aria-pressed=true]) { background: color-mix(in srgb, var(--atlas-text) 7%, transparent); }
+.atlas-immersive-timeline button.provisional:not([aria-pressed=true]) { color: var(--atlas-gold); }
+.atlas-timeline-label { color: var(--atlas-muted); font-size: 10px; padding: 0 8px; }
+.atlas-immersive-selection { position: absolute; inset: 0; pointer-events: none; z-index: var(--atlas-z-selection); }
+.atlas-immersive-selection > * { pointer-events: auto; }
+.atlas-immersive .atlas-state-preview { position: absolute; top: 174px; right: 92px; left: auto; bottom: auto; width: 300px; max-height: calc(100% - 290px); overflow-y: auto; padding: 20px; }
+.atlas-immersive-analysis { position: absolute; top: 20px; right: 20px; bottom: 20px; width: min(580px, calc(100% - 40px)); z-index: var(--atlas-z-analysis); display: flex; flex-direction: column; background: color-mix(in srgb, var(--atlas-panel-soft) 96%, transparent); }
+.atlas-immersive-analysis > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; border-bottom: 1px solid var(--atlas-glass-border); }
+.atlas-immersive-analysis > header h2 { margin: 5px 0 0; font: 400 25px/1.2 var(--atlas-font-serif), serif; }
+.atlas-immersive-analysis-body { padding: 24px; overflow: auto; overscroll-behavior: contain; }
+.atlas-immersive-analysis-body h3 { margin: 20px 0 12px; font: 400 22px/1.3 var(--atlas-font-serif), serif; }
+.atlas-immersive-analysis-body .atlas-table-wrap { max-height: 460px; overflow: auto; }
+.atlas-immersive-analysis-body .atlas-table-wrap button { min-height: 36px; text-align: left; }
+.atlas-immersive-analysis-body .atlas-table-wrap td, .atlas-immersive-analysis-body .atlas-table-wrap th { font-size: 12px; padding: 10px; }
+.atlas-immersive-analysis-body .atlas-themes { margin-top: 0; }
+.atlas-immersive-analysis-body .atlas-theme-columns { display: flex; flex-direction: column; gap: 24px; }
+.atlas-immersive-analysis-body .atlas-region-overview { display: block; }
+.atlas-immersive-analysis-body .atlas-region-grid { display: grid; grid-template-columns: 1fr; }
+.atlas-immersive-analysis-body .atlas-sources { position: static; width: auto; max-height: none; margin-top: 16px; }
+.atlas-immersive-analysis-body .atlas-sources a { color: var(--atlas-cyan); }
+.atlas-immersive-analysis-body .atlas-sources article { padding: 12px 0; border-bottom: 1px solid var(--atlas-glass-border); }
+.atlas-immersive-analysis-body .atlas-sources article small { display: block; color: var(--atlas-muted); font-size: 11px; }
+.atlas-immersive-presentation { position: absolute; z-index: var(--atlas-z-header); left: 370px; right: 24px; top: 110px; pointer-events: none; }
+.atlas-immersive-presentation .atlas-presentation { pointer-events: auto; margin: 0; }
+.atlas-immersive .atlas-curtain-base, .atlas-immersive .atlas-curtain-cover { position: absolute; inset: 0; width: 100%; height: 100%; }
+.atlas-immersive .atlas-curtain-cover { pointer-events: none; }
+.atlas-immersive .atlas-curtain-slider { z-index: 2; bottom: 120px; left: 390px; width: min(340px, 40%); }
+.atlas-immersive .atlas-curtain-divider { top: 0; bottom: 0; }
+.atlas-immersive .atlas-map-loading { gap: 16px; font-size: 13px; }
+.atlas-immersive .atlas-reading-fact { padding: 18px 0; border-bottom: 1px solid var(--atlas-glass-border); }
+.atlas-immersive .atlas-reading-fact strong { display: block; margin: 6px 0; font: 450 48px/1.1 var(--atlas-font-sans), sans-serif; letter-spacing: -.03em; }
+.atlas-immersive .atlas-reading-fact p { margin: 8px 0; font-size: 13px; line-height: 1.6; }
+.atlas-immersive .atlas-reading-list { margin: 16px 0; }
+.atlas-immersive .atlas-reading-list > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--atlas-glass-border); font-size: 12px; }
+.atlas-immersive .atlas-reading-list > div > span { color: var(--atlas-muted); }
+.atlas-immersive .atlas-reading-list b { font-weight: 550; }
+@media (max-width: 1180px) and (min-width: 901px) {
+  .atlas-immersive-version { display: none; }
+  .atlas-immersive-reading { width: 280px; padding: 18px; }
+  .atlas-immersive-dock { left: 320px; right: 280px; }
+  .atlas-timeline-label { display: none; }
+  .atlas-immersive-timeline button { min-width: 62px; padding: 8px; }
+  .atlas-immersive .atlas-map-coordinate, .atlas-immersive .atlas-map-label { left: 324px; }
+}
+@media (max-width: 900px) {
+  .atlas-root.atlas-immersive { min-height: 650px; }
+  .atlas-immersive-header { top: 12px; left: 12px; right: 12px; padding: 10px; gap: 12px; }
+  .atlas-immersive-header .atlas-brand-icon { width: 36px; height: 36px; }
+  .atlas-immersive-header .atlas-brand b, .atlas-immersive-header .atlas-brand h1 { font-size: 16px; }
+  .atlas-immersive-header .atlas-brand small { font-size: 9px; }
+  .atlas-immersive-header .atlas-search { width: auto; flex: 1; min-width: 100px; }
+  .atlas-immersive-version { display: none; }
+  .atlas-immersive-navigation { left: 12px; right: 132px; top: 90px; justify-content: space-between; }
+  .atlas-immersive-navigation button { min-height: 44px; padding: 7px 12px; }
+  .atlas-immersive-panel-toggle { left: 12px; top: auto; bottom: 92px; }
+  .atlas-immersive-analysis-toggle { top: 90px; right: 12px; min-height: 54px; }
+  .atlas-immersive-reading { top: auto; bottom: 152px; left: 12px; right: 12px; width: auto; max-height: min(36dvh, 310px); padding: 18px; }
+  .atlas-immersive-tools { grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; padding-bottom: 14px; }
+  .atlas-immersive-tools label:first-child { grid-column: auto; }
+  .atlas-immersive-tools select { min-height: 44px; font-size: 13px; }
+  .atlas-immersive .atlas-insight h2 { font-size: 30px; }
+  .atlas-immersive .atlas-result-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; }
+  .atlas-immersive .atlas-map-controls { top: 180px; right: 12px; transform: none; }
+  .atlas-immersive .atlas-map-coordinate { bottom: 140px; left: 14px; right: 14px; font-size: 10px; }
+  .atlas-immersive .atlas-map-label { top: 152px; left: 14px; }
+  .atlas-immersive-legend { right: 12px; bottom: 90px; width: 240px; padding: 10px 12px; }
+  .atlas-immersive-legend > small { display: none; }
+  .atlas-immersive-dock { left: 12px; right: 12px; bottom: 12px; }
+  .atlas-immersive-timeline { width: 100%; justify-content: center; }
+  .atlas-immersive-timeline button { flex: 1; min-width: 64px; max-width: 100px; padding: 7px 10px; }
+  .atlas-immersive-selection .atlas-state-preview { top: 152px; left: 12px; right: 74px; bottom: auto; width: auto; max-height: calc(100% - 250px); }
+  .atlas-immersive .atlas-map-tooltip { top: 152px; left: 14px; right: 76px; max-width: 300px; }
+  .atlas-immersive-analysis { top: 12px; right: 12px; left: 12px; bottom: 12px; width: auto; }
+  .atlas-immersive-analysis > header { padding: 16px; }
+  .atlas-immersive-analysis-body { padding: 18px; }
+  .atlas-immersive-presentation { top: 152px; left: 12px; right: 74px; }
+  .atlas-immersive .atlas-curtain-slider { left: 16px; bottom: 145px; width: calc(100% - 90px); }
+}
+@media (max-width: 600px) {
+  .atlas-immersive-header { flex-wrap: wrap; gap: 8px; }
+  .atlas-immersive-header .atlas-brand { flex: 1; }
+  .atlas-immersive-header .atlas-search { order: 3; flex-basis: 100%; height: 42px; }
+  .atlas-immersive-header > .atlas-button { padding: 8px 10px; }
+  .atlas-immersive-header > .atlas-button > span { font-size: 12px; }
+  .atlas-immersive-navigation { top: 136px; right: 64px; }
+  .atlas-immersive-navigation button { padding: 7px 9px; font-size: 12px; }
+  .atlas-immersive-analysis-toggle { top: 136px; min-height: 54px; padding: 0 12px; }
+  .atlas-immersive-analysis-toggle > span { display: none; }
+  .atlas-immersive .atlas-map-controls { top: 207px; }
+  .atlas-immersive .atlas-map-controls button { width: 44px; height: 44px; }
+  .atlas-immersive-header .atlas-search input { font-size: 16px; }
+  .atlas-immersive-navigation button { font-size: 14px; }
+  .atlas-immersive-reading { max-height: 28dvh; }
+  .atlas-immersive-tools { grid-template-columns: 1fr 1fr; }
+  .atlas-immersive-tools label:first-child { grid-column: 1 / -1; }
+  .atlas-immersive .atlas-result-list { display: block; }
+  .atlas-immersive .atlas-helper, .atlas-immersive .atlas-method-note { font-size: 14px; }
+  .atlas-immersive-legend { width: calc(100% - 140px); }
+  .atlas-immersive-legend .atlas-legend > span { font-size: 14px; }
+  .atlas-immersive .atlas-map-coordinate { bottom: 250px; font-size:11px; }
+  .atlas-immersive-selection .atlas-state-preview { top: 202px; max-height: calc(100% - 298px); }
+  .atlas-immersive .atlas-map-tooltip, .atlas-immersive .atlas-map-label { top: 204px; }
+  .atlas-timeline-label { display: none; }
+  .atlas-immersive-timeline button { min-width: 58px; padding: 8px; }
+  .atlas-immersive-timeline button b { font-size: 13px; }
+  .atlas-immersive-timeline button small { font-size: 10px; }
+  .atlas-immersive-presentation { top: 200px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-immersive *, .atlas-immersive *::before, .atlas-immersive *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+.min-h-screen[data-polis-main] .atlas-immersive { --atlas-top-offset: 0px; }
+@media (max-width: 1023px) {
+  .min-h-screen[data-polis-main] .atlas-immersive { --atlas-top-offset: 64px; }
+}
