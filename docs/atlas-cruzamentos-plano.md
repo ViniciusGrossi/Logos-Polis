@@ -29,6 +29,10 @@ Spec: plano completo autorizado pelo usuário; retomada explícita em 13/10/2026
 
 ## Retomada e evidências — 15/10/2026
 
+- Task 1: complete — preparação contextual, auditoria e nova release imutável; 21/21 testes Python do projeto e 3/3 da preparação copiada. Reconciliação externa independente permanece ressalva explícita.
+- Task 2: complete — contratos opcionais retrocompatíveis, candidatura correta, tercis e agregação com numeradores/denominadores; suíte Atlas41/41.
+- Task 3: complete — mapa contextual/bivariado, grupos, URL e fontes; navegador6/6, navegação imersiva11/11, regressão de seleção RED→GREEN sem alterar arquivos da aplicação.
+- Task 4: complete para esta wave local — revisão independente e dois importantes corrigidos, menores registrados; tipos/lint/build, HTTP80/80 e sincronização com a pasta original aprovados. Implementação preservada no commit local `b96088e`, sem push, merge ou deploy. Aceite integral do plano não declarado.
 - Preparação local imutável: `atlas-v1-845ce0fdfb43a137`, anterior preservada. PIB e SIM com 5.570 valores municipais; ausência do município criado após a edição territorial de 2022 permanece explícita.
 - Auditoria da preparação SIM: 1.544.266 registros processados, 44.367 óbitos não fetais por agressões, 43.806 vinculados ao catálogo e 561 sem correspondência municipal. Os não vinculados não foram distribuídos artificialmente. Somente agregados publicados na preparação; nenhum registro individual no frontend.
 - Revisão independente concluída: nenhum crítico, dois importantes, dois menores. Importantes acolhidos: variação de grupo deve comparar participações agregadas nos dois períodos; limpar ou redesenhar seleção deve remover a célula persistida na URL.
