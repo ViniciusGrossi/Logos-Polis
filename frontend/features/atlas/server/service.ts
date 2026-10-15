@@ -400,12 +400,12 @@ export class AtlasService {
         for (const territory of territories) {
           const current =
             index.get(metricKey(territory.id, query.year, query.round)) ?? null;
-          const currentShare = candidateShare(current, "PT");
+          const currentShare = candidateShare(current, query.candidate === "PL" && query.year === 2018 ? "PSL" : query.candidate ?? "PT");
           const before = previous
             ? (index.get(metricKey(territory.id, previous, query.round)) ??
               null)
             : null;
-          const beforeShare = candidateShare(before, "PT");
+          const beforeShare = candidateShare(before, query.candidate === "PL" && previous === 2018 ? "PSL" : query.candidate ?? "PT");
           const y =
             query.measure === "share"
               ? currentShare
@@ -429,6 +429,11 @@ export class AtlasService {
               x,
               y,
               weight: current.validVotes,
+              votes: findCandidate(current,query.candidate==='PL' && query.year===2018?'PSL':query.candidate??'PT')!.votes,
+              ...(before && beforeShare!==null ? {
+                votesBefore:findCandidate(before,query.candidate==='PL' && previous===2018?'PSL':query.candidate??'PT')!.votes,
+                validVotesBefore:before.validVotes,
+              } : {}),
             });
         }
         const points = nationalPoints.filter((p) =>
@@ -440,12 +445,12 @@ export class AtlasService {
         const currentNomination =
           metrics
             .filter((m) => m.year === query.year && m.round === query.round)
-            .map((m) => findCandidate(m, "PT"))
+            .map((m) => findCandidate(m, query.candidate === "PL" && query.year === 2018 ? "PSL" : query.candidate ?? "PT"))
             .find((c) => c !== null) ?? null;
         const previousNomination =
           metrics
             .filter((m) => m.year === previous && m.round === query.round)
-            .map((m) => findCandidate(m, "PT"))
+            .map((m) => findCandidate(m, query.candidate === "PL" && previous === 2018 ? "PSL" : query.candidate ?? "PT"))
             .find((c) => c !== null) ?? null;
         const methodology = `Spearman com ranks médios nos empates; coeficiente não calculado com menos de 30 municípios ou variância zero. ${query.weighted ? "Sensibilidade ponderada: Pearson dos ranks ordinários com peso de votos válidos da eleição atual." : "Cada município tem o mesmo peso."} Associação municipal, sem inferência causal ou individual. Brasil e recorte estadual ou macrorregional usam amostras e ranks próprios. Indicador ${indicator.period}; eleição ${query.year}, ${query.round}º turno.`;
         return this.response(
@@ -453,6 +458,7 @@ export class AtlasService {
           {
             points,
             national: spearman(nationalPoints, query.weighted),
+            measure: query.measure,
             regional: spearman(points, query.weighted),
             indicator,
             missing: count - points.length,

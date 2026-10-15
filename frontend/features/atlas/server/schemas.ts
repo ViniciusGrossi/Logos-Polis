@@ -20,8 +20,8 @@ export const candidateSchema = z.object({ id: text, name: text, party: text, vot
 export const metricSchema = z.object({ territoryId: text, year: count, round: z.union([z.literal(1), z.literal(2)]), eligible: count, turnout: count, abstentions: count, validVotes: count, officialValidVotes: count, blankVotes: count, nullVotes: count, candidates: z.array(candidateSchema) });
 export const sourceSchema = z.object({ id: text, title: text, url: publicUrl, period: text, collectedAt: text, methodology: text, status: z.enum(["available", "unavailable", "partial"]) });
 export const catalogSchema = z.object({ schemaVersion: z.literal(1), snapshotId: text, generatedAt: z.iso.datetime({ offset: true }), elections: z.array(z.object({ year: count, rounds: z.array(z.union([z.literal(1), z.literal(2)])), provisional: z.boolean() })), territories: z.array(territorySchema), coverage: z.object({ resultsMunicipalities: count, mappedMunicipalities: count, issues: z.array(z.object({ id: text, name: text, uf: text, reason: text })), geometryEdition: text }), sources: z.array(sourceSchema), methodology: z.array(text) });
-const contextValueSchema = z.object({ territoryId: text, income: finite.nonnegative().nullable(), education: percentage.nullable(), density: finite.nonnegative().nullable() });
-export const contextSchema = z.object({ values: z.array(contextValueSchema), indicators: z.array(z.object({ id: z.enum(["income", "education", "density"]), label: text, unit: text, period: text, sourceId: text, status: z.enum(["available", "unavailable", "partial"]) })), sources: z.array(sourceSchema) });
+const contextValueSchema = z.object({ territoryId: text, income: finite.nonnegative().nullable(), education: percentage.nullable(), density: finite.nonnegative().nullable(), gdp: finite.nonnegative().nullable().optional(), homicide: finite.nonnegative().nullable().optional() });
+export const contextSchema = z.object({ values: z.array(contextValueSchema), indicators: z.array(z.object({ id: z.enum(["income", "education", "density", "gdp", "homicide"]), label: text, unit: text, period: text, sourceId: text, status: z.enum(["available", "unavailable", "partial"]) })), sources: z.array(sourceSchema) });
 export const themesSchema = z.object({ topics: z.array(z.object({ id: text, name: text, description: text })), series: z.array(z.object({ id: text, name: text, geography: text, period: text, collectedAt: text, sourceUrl: publicUrl, normalization: text, values: z.array(z.object({ date: z.iso.date(), value: percentage.nullable() })) })), surveys: z.array(z.object({ id: text, institution: text, title: text, question: text, universe: text, geography: text, collectedAt: text, sourceUrl: publicUrl, results: z.array(z.object({ topic: text, percentage })), methodology: text })), sources: z.array(sourceSchema) });
 export const representationSchema = z.array(z.object({ territoryId: text, year: count, parties: z.array(z.object({ party: text, votes: count, share: percentage, seats: count })), elected: z.array(z.object({ name: text, party: text, office: text })) }));
 
@@ -40,17 +40,17 @@ export const geometrySchema = z.object({ type: z.literal("FeatureCollection"), f
 
 const territoryQuery = z.object({ uf, year, round, page: decimalInput(1, 1, 100000), pageSize: decimalInput(50, 1, 100), kind: z.literal("geometry").optional() }).strict();
 const comparisonQuery = z.object({ uf, fromYear: decimalInput(2018, 1990, 2100), toYear: year, round, candidate: z.string().regex(/^[\p{L}\p{N} .:_-]{1,100}$/u).default("PT") }).strict();
-const contextQuery = z.object({ uf, year, round, indicator: z.enum(["income", "education", "density"]).default("income"), measure: z.enum(["share", "delta"]).default("share"), weighted: z.enum(["true", "false"]).default("false").transform(v => v === "true") }).strict();
+const contextQuery = z.object({ uf, year, round, indicator: z.enum(["income", "education", "density", "gdp", "homicide"]).default("income"), candidate: z.enum(["PT","PL"]).default("PT"), measure: z.enum(["share", "delta"]).default("share"), weighted: z.enum(["true", "false"]).default("false").transform(v => v === "true") }).strict();
 const dossierQuery = z.object({ id: z.string().regex(/^(BR|EXTERIOR|[A-Z]{2}|[A-Za-z0-9:_-]{1,32})$/) }).strict();
 const emptyQuery = z.object({}).strict();
 export type TerritoryQuery = z.infer<typeof territoryQuery>;
 export type ComparisonQuery = z.infer<typeof comparisonQuery>;
-export type ContextQuery = z.infer<typeof contextQuery>;
+export type ContextQuery = Omit<z.infer<typeof contextQuery>, 'candidate'> & { candidate?: 'PT' | 'PL' };
 export type AtlasEndpoint = "catalogo" | "territorios" | "comparacao" | "contexto" | "pautas" | "dossie";
 
 export function parseAtlasQuery(endpoint: "territorios", search: URLSearchParams): TerritoryQuery;
 export function parseAtlasQuery(endpoint: "comparacao", search: URLSearchParams): ComparisonQuery;
-export function parseAtlasQuery(endpoint: "contexto", search: URLSearchParams): ContextQuery;
+export function parseAtlasQuery(endpoint: "contexto", search: URLSearchParams): z.infer<typeof contextQuery>;
 export function parseAtlasQuery(endpoint: "dossie", search: URLSearchParams): { id: string };
 export function parseAtlasQuery(endpoint: "catalogo" | "pautas", search: URLSearchParams): Record<string, never>;
 export function parseAtlasQuery(endpoint: AtlasEndpoint, search: URLSearchParams) {

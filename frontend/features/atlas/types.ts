@@ -3,7 +3,7 @@ import type { FeatureCollection, Geometry } from "geojson";
 export type ElectionRound = 1 | 2;
 export type AtlasTab = "atlas" | "evolucao" | "contexto" | "pautas";
 export type AtlasIndicator = "winner" | "margin" | "turnout" | "abstention" | "blank" | "null";
-export type ContextIndicator = "income" | "education" | "density";
+export type ContextIndicator = "income" | "education" | "density" | "gdp" | "homicide";
 export interface Territory {
   id: string; name: string; level: "country" | "region" | "state" | "municipality" | "exterior";
   uf: string | null; tseCode: number | null; ibgeCode: number | null;
@@ -56,15 +56,17 @@ export interface ComparisonDataset {
 }
 export interface ContextValue {
   territoryId: string; income: number | null; education: number | null; density: number | null;
+  gdp?: number | null; homicide?: number | null;
 }
 export interface ContextDataset {
   values: ContextValue[];
   indicators: { id: ContextIndicator; label: string; unit: string; period: string; sourceId: string; status: "available" | "unavailable" | "partial" }[];
   sources: AtlasSource[];
 }
-export interface ContextPoint { territory: Territory; x: number; y: number; weight: number; }
+export interface ContextPoint { territory: Territory; x: number; y: number; weight: number; votes?:number; votesBefore?:number; validVotesBefore?:number; }
 export interface CorrelationResult { n: number; coefficient: number | null; weighted: boolean; }
 export interface ContextAnalysis {
+  measure?: 'share' | 'delta';
   points: ContextPoint[]; national: CorrelationResult; regional: CorrelationResult;
   indicator: ContextDataset["indicators"][number]; missing: number;
   candidateLabel: string; methodology: string;

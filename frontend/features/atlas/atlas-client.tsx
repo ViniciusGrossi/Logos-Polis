@@ -29,6 +29,9 @@ import type {
   ThemesDataset,
 } from "./types";
 import { useAtlasData } from "./use-atlas-data";
+import { ContextLegend } from './components/context-legend';
+import { ContextReading } from './components/context-reading';
+import { classifyContext, type ContextMapMode } from './crossmap';
 import {
   candidateClass,
   candidatePct,
@@ -242,19 +245,22 @@ function AtlasExperience({
   const [split, setSplit] = useState(50);
   const [changesOnly, setChangesOnly] = useState(initialParams.changes === "1");
   const [contextIndicator, setContextIndicator] = useState<ContextIndicator>(
-    ["income", "education", "density"].includes(initialParams.context)
+    ["income", "education", "density", "gdp", "homicide"].includes(initialParams.context)
       ? (initialParams.context as ContextIndicator)
       : "income",
   );
   const [measure, setMeasure] = useState<"share" | "delta">(
     initialParams.measure === "delta" ? "delta" : "share",
   );
+  const [contextMode,setContextMode]=useState<ContextMapMode>(initialParams.contextView==='indicator'?'indicator':initialParams.contextView==='vote'?'vote':'bivariate');
+  const [contextCell,setContextCell]=useState<number|null>(/^[0-8]$/.test(initialParams.cell??'')?Number(initialParams.cell):null);
   const [weighted, setWeighted] = useState(initialParams.weighted === "1");
   const [selected, setSelected] = useState<string | null>(null);
   const [peek, setPeek] = useState<string | null>(
     isStateScope(initialParams.preview ?? "") ? initialParams.preview : null,
   );
   const [highlighted, setHighlighted] = useState<string[]>([]);
+  const changeContextSelection=useCallback((ids:string[])=>{setContextCell(null);setHighlighted(ids);},[]);
   const [dossier, setDossier] = useState<string | null>(null);
   const [camera, setCamera] = useState<AtlasCamera | null>(() => parseCamera(initialParams.map));
   const scopeCameras = useRef(new Map<string, AtlasCamera>());
@@ -294,7 +300,7 @@ function AtlasExperience({
       : "share";
   const contextQuery = useAtlasData<ContextAnalysis>(
     catalog && tab === "contexto"
-      ? `contexto?uf=${uf}&year=${year}&round=${round}&indicator=${contextIndicator}&measure=${contextMeasure}&weighted=${weighted}`
+      ? `contexto?uf=${uf}&year=${year}&round=${round}&indicator=${contextIndicator}&candidate=${candidate}&measure=${contextMeasure}&weighted=${weighted}`
       : null,
   );
   const themesQuery = useAtlasData<ThemesDataset>(
@@ -478,6 +484,8 @@ function AtlasExperience({
       measure: contextMeasure,
     });
     if (symbols) params.set("symbols", "1");
+    params.set('contextView',contextMode);
+    if(contextCell!==null)params.set('cell',String(contextCell));
     if (curtain) params.set("view", "curtain");
     if (changesOnly) params.set("changes", "1");
     if (weighted) params.set("weighted", "1");
@@ -495,6 +503,8 @@ function AtlasExperience({
     presetId,
     candidate,
     contextIndicator,
+    contextMode,
+    contextCell,
     measure,
     contextMeasure,
     symbols,
@@ -516,6 +526,11 @@ function AtlasExperience({
     setPage(1);
     setPeek((id) => (id && scopeContainsState(uf, id) ? id : null));
   }, [uf, tab, presetId, year, round, catalog]);
+  useEffect(()=>{
+    if(tab==='contexto' && context && contextCell!==null){
+      setHighlighted(classifyContext(context.points).rows.filter(row=>row.cell===contextCell).map(row=>row.territory.id));
+    }
+  },[context,contextCell,tab]);
   // Reconcile URL input against the asynchronously published catalog, never an invented edition.
   useEffect(() => {
     if (!catalog) return;
@@ -642,6 +657,7 @@ function AtlasExperience({
     );
   }
   const mapHighlighted = useMemo(() => municipalView ? highlighted : [...highlighted,...new Set(context?.points.filter(point=>highlighted.includes(point.territory.id)).map(point=>point.territory.uf ?? "") ?? [])], [municipalView,highlighted,context?.points]);
+  const mapContextLayer=useMemo(()=>tab==='contexto' && context ? {analysis:context,mode:contextMode} : undefined,[tab,context,contextMode]);
   const mapProps = {
     geometry: geometry!,
     records,
@@ -656,6 +672,7 @@ function AtlasExperience({
     progressive: !isStateScope(uf) && !symbols ? {year:activeYear,round:activeRound} : undefined,
     municipalComparison: comparison?.rows,
     liveCamera: tab === "evolucao" && curtain,
+    contextLayer: mapContextLayer,
   };
   const stateOverlay = peek && (
     <StatePreview
@@ -720,8 +737,10 @@ function AtlasExperience({
         <label>Candidatura<select aria-label="Candidatura comparada" value={candidate} onChange={event=>setCandidate(event.target.value)}><option value="PT">Haddad / Lula · PT</option><option value="PL">Jair Bolsonaro · PSL/PL</option></select></label>
         <label className="atlas-checkbox"><input type="checkbox" checked={changesOnly} onChange={event=>setChangesOnly(event.target.checked)}/>Somente mudanças de vencedor</label>
       </> : <>
-        <label>Indicador territorial<select aria-label="Indicador territorial" value={contextIndicator} onChange={event=>{setContextIndicator(event.target.value as ContextIndicator);setHighlighted([]);}}><option value="income">Renda domiciliar per capita</option><option value="education">Alfabetização · 15+</option><option value="density">Densidade demográfica</option></select></label>
-        <label>Resultado eleitoral<select aria-label="Resultado eleitoral" value={contextMeasure} onChange={event=>{setMeasure(event.target.value as "share"|"delta");setHighlighted([]);}}><option value="share">Participação do PT</option>{((year===2022 && round===2)||(year===2026 && round===1)) && <option value="delta">Variação do PT</option>}</select></label>
+        <label>Indicador territorial<select aria-label="Indicador territorial" value={contextIndicator} onChange={event=>{setContextIndicator(event.target.value as ContextIndicator);setHighlighted([]);setContextCell(null);}}><option value="gdp">PIB per capita</option><option value="homicide">Mortalidade por agressões</option><option value="income">Renda domiciliar per capita</option><option value="education">Alfabetização · 15+</option><option value="density">Densidade demográfica</option></select></label>
+        <label>Comparar com<select aria-label="Candidatura no cruzamento" value={candidate} onChange={event=>{setCandidate(event.target.value);setHighlighted([]);setContextCell(null);}}><option value="PT">PT · candidatura da eleição</option><option value="PL">PL/PSL · candidatura da eleição</option></select></label>
+        <label>Leitura do mapa<select aria-label="Leitura contextual do mapa" value={contextMode} onChange={event=>setContextMode(event.target.value as ContextMapMode)}><option value="bivariate">Indicador × voto · 3×3</option><option value="indicator">Somente indicador</option><option value="vote">Somente voto</option></select></label>
+        <label>Resultado eleitoral<select aria-label="Resultado eleitoral" value={contextMeasure} onChange={event=>{setMeasure(event.target.value as "share"|"delta");setHighlighted([]);setContextCell(null);}}><option value="share">Participação · {candidate}</option>{((year===2022 && round===2)||(year===2026 && round===1)) && <option value="delta">Variação · {candidate}</option>}</select></label>
         <label className="atlas-checkbox"><input type="checkbox" checked={weighted} onChange={event=>setWeighted(event.target.checked)}/>Sensibilidade ao peso eleitoral</label>
       </>}
       {uf!=="BR" && <nav className="atlas-scope-path" aria-label="Caminho territorial"><button onClick={()=>changeScope("BR")}>Brasil</button><ChevronRight size={13}/>{municipalView && parentRegion && <><button onClick={()=>changeScope(parentRegion.id)}>{parentRegion.name}</button><ChevronRight size={13}/></>}<span>{stateName}</span></nav>}
@@ -735,7 +754,8 @@ function AtlasExperience({
       </> : <DataState loading={comparisonQuery.isLoading} error={comparisonQuery.error} retry={()=>void comparisonQuery.refetch()}/>}
     </> : tab === "contexto" ? <>
       <span className="atlas-eyebrow">Associação territorial</span><h2>{stateName}</h2>
-      {context ? <><p className="atlas-helper">{context.indicator.label} × {context.candidateLabel} · {context.indicator.period}</p><div className="atlas-reading-fact"><span>Spearman neste recorte</span><strong>{context.regional.coefficient===null ? "Não calculada" : context.regional.coefficient.toFixed(3).replace(".",",")}</strong><p>{number(context.regional.n)} pares municipais válidos</p></div><div className="atlas-reading-list"><div><span>Associação nacional</span><b>{context.national.coefficient===null ? "Não calculada" : context.national.coefficient.toFixed(3).replace(".",",")}</b></div><div><span>Sem par válido no recorte</span><b>{number(context.missing)}</b></div><div><span>Municípios selecionados</span><b>{number(highlighted.length)}</b></div></div><p className="atlas-helper">Abra as análises para selecionar municípios na dispersão e relacioná-los ao mapa. Correlação não demonstra causa nem comportamento individual.</p>{highlighted.length>0 && <button className="atlas-text-button" onClick={()=>setHighlighted([])}>Limpar seleção conectada</button>}</> : <DataState loading={contextQuery.isLoading} error={contextQuery.error} retry={()=>void contextQuery.refetch()}/>}
+      {context && <ContextReading analysis={context} highlighted={highlighted} selectedId={selected}/>}
+{context ? <><p className="atlas-helper">{context.indicator.label} × {context.candidateLabel} · {context.indicator.period}</p><div className="atlas-reading-fact"><span>Spearman neste recorte</span><strong>{context.regional.coefficient===null ? "Não calculada" : context.regional.coefficient.toFixed(3).replace(".",",")}</strong><p>{number(context.regional.n)} pares municipais válidos</p></div><div className="atlas-reading-list"><div><span>Associação nacional</span><b>{context.national.coefficient===null ? "Não calculada" : context.national.coefficient.toFixed(3).replace(".",",")}</b></div><div><span>Sem par válido no recorte</span><b>{number(context.missing)}</b></div><div><span>Municípios selecionados</span><b>{number(highlighted.length)}</b></div></div><p className="atlas-helper">Abra as análises para selecionar municípios na dispersão e relacioná-los ao mapa. Correlação não demonstra causa nem comportamento individual.</p>{highlighted.length>0 && <button className="atlas-text-button" onClick={()=>changeContextSelection([])}>Limpar seleção conectada</button>}</> : <DataState loading={contextQuery.isLoading} error={contextQuery.error} retry={()=>void contextQuery.refetch()}/>}
     </> : <>
       <span className="atlas-eyebrow">Três leituras diferentes</span><h2>Pautas em perspectiva</h2><p className="atlas-helper">Buscas, preocupação declarada e condição observada não medem a mesma coisa.</p><div className="atlas-reading-list"><div><span>Pesquisa</span><b>DataSenado · nacional</b></div><div><span>Interesse de busca</span><b>{themesQuery.data?.data.series.length ? "Séries documentadas" : "Sem série preparada"}</b></div><div><span>Contexto observado</span><b>IBGE · municipal</b></div></div><p className="atlas-helper">O mapa mantém os resultados eleitorais. As pesquisas conservam seu recorte original e não são atribuídas a cada município.</p><p className="atlas-helper">As novas camadas de segurança, PIB e cobertura local entram após a aprovação desta composição, com fontes e cobertura validadas.</p>
     </>;
@@ -747,7 +767,7 @@ function AtlasExperience({
     </div> : <AtlasMap {...mapProps} comparison={tab==="evolucao"?comparisonMap:undefined} delta={tab==="evolucao"} changesOnly={tab==="evolucao" && changesOnly} highlightedIds={mapHighlighted}/>
     const analysis = <>
       <p className="atlas-helper">Recorte analisado: <b>{stateName}</b>. O enquadramento e o nível de zoom não alteram estes totais.</p>
-      {tab==="contexto" && context && <><h3>{context.indicator.label}</h3><ContextPlot points={context.points} unit={context.indicator.unit} measure={contextMeasure} selectedId={selected} highlighted={highlighted} onSelect={choose} onHighlight={setHighlighted}/><p className="atlas-helper">Arraste um retângulo para selecionar municípios. {context.methodology}</p></>}
+      {tab==="contexto" && context && <><h3>{context.indicator.label}</h3><ContextPlot points={context.points} unit={context.indicator.unit} measure={contextMeasure} selectedId={selected} highlighted={highlighted} onSelect={choose} onHighlight={changeContextSelection}/><p className="atlas-helper">Arraste um retângulo para selecionar municípios. {context.methodology}</p></>}
       {tab==="pautas" && (themesQuery.data ? <Themes data={themesQuery.data.data}/> : <DataState loading={themesQuery.isLoading} error={themesQuery.error} retry={()=>void themesQuery.refetch()}/>)}
       {tab==="atlas" && <><button className={`atlas-button ${symbols?"active":""}`} aria-pressed={symbols} onClick={()=>setSymbols(!symbols)}><Layers size={16}/>{symbols?"Voltar ao mapa geográfico":"Mostrar peso eleitoral"}</button><p className="atlas-helper">Área dos círculos proporcional aos votos válidos. O tamanho geográfico não expressa peso eleitoral.</p>{uf==="BR" && <RegionOverview records={records} onSelect={changeScope}/>}</>}
       {tab==="evolucao" && comparison && <><h3>Proporção e volume</h3><p className="atlas-helper">{number(contrasts.shareUpVotesDown)} municípios com participação proporcional maior e votos absolutos menores; {number(contrasts.shareDownVotesUp)} com participação menor e votos absolutos maiores. {number(contrasts.n)} pares válidos.</p><h3>Distribuição das mudanças</h3><div className="atlas-histogram" role="img" aria-label={histogram.map(bin=>`${bin.min} a ${bin.min+5} pontos: ${bin.count} municípios`).join("; ")}>{histogram.map(bin=><div key={bin.min}><small>{number(bin.count)}</small><i style={{height:`${Math.max(2,bin.count/Math.max(1,...histogram.map(item=>item.count))*90)}px`}}/><span>{bin.min}</span></div>)}</div></>}
@@ -760,7 +780,7 @@ function AtlasExperience({
       navigation={tabs.map(area=><button key={area.id} aria-current={tab===area.id?"page":undefined} onClick={()=>setTab(area.id)}>{area.label}</button>)}
       tools={tools} reading={reading} map={map}
       timeline={catalog && (tab==="evolucao" ? <nav className="atlas-immersive-timeline" aria-label="Comparações eleitorais">{presets.map(option=><button key={option.id} aria-pressed={presetId===option.id} onClick={()=>setPresetId(option.id)}><b>{option.from} → {option.to}</b><small>{option.round}º turno{option.to===2026?" · provisória":""}</small></button>)}</nav> : <AtlasTimeline elections={catalog.elections} year={year} round={round} onChange={(nextYear,nextRound)=>{setYear(nextYear);setRound(nextRound);}}/>)}
-      legend={<><span className="atlas-legend-title">{deltaView?"Variação de participação":activeIndicator.label}</span>{deltaView?<div className="atlas-delta-legend"><span>−20 p.p.</span><i/><span>+20 p.p.</span></div>:<Legend indicator={indicator}/>}<small>{deltaView?"Escala comum · valores completos antes de arredondar":symbols?"Área proporcional aos votos válidos":activeIndicator.denominator}</small></>}
+      legend={tab==='contexto' && context ? <ContextLegend analysis={context} mode={contextMode} selectedCell={contextCell} onSelect={cell=>{setContextCell(cell);setHighlighted(cell===null?[]:classifyContext(context.points).rows.filter(r=>r.cell===cell).map(r=>r.territory.id));}}/> : <><span className="atlas-legend-title">{deltaView?"Variação de participação":activeIndicator.label}</span>{deltaView?<div className="atlas-delta-legend"><span>−20 p.p.</span><i/><span>+20 p.p.</span></div>:<Legend indicator={indicator}/>}<small>{deltaView?"Escala comum · valores completos antes de arredondar":symbols?"Área proporcional aos votos válidos":activeIndicator.denominator}</small></>}
       analysis={analysis} selection={selectionOverlay}
       notice={activeYear===2026?<p className="atlas-notice">2026 · base local provisória. Certificação externa pendente.</p>:null}
       presentation={presentation?<div className="atlas-presentation"><button aria-label="Cena anterior" disabled={scene===0} onClick={()=>goScene(scene-1)}><ChevronLeft/></button><span><small>CENA {scene+1} / 6</small>{scenes[scene]}</span><button aria-label="Próxima cena" disabled={scene===5} onClick={()=>goScene(scene+1)}><ChevronRight/></button></div>:null}
@@ -1491,7 +1511,7 @@ function AtlasExperience({
                         selectedId={selected}
                         highlighted={highlighted}
                         onSelect={choose}
-                        onHighlight={setHighlighted}
+                        onHighlight={changeContextSelection}
                       />
                       <p className="atlas-helper">
                         Arraste um retângulo para selecionar municípios; toque
