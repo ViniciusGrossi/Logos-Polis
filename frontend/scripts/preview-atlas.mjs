@@ -61,6 +61,8 @@ const server = createServer(async (req, res) => {
           "contexto",
           "pautas",
           "dossie",
+          "cargos",
+          "residuos",
         ].includes(endpoint)
       ) {
         res.writeHead(404);
@@ -79,6 +81,8 @@ const server = createServer(async (req, res) => {
       if (endpoint === "contexto") data = await service.getContext(query);
       if (endpoint === "pautas") data = await service.getThemes();
       if (endpoint === "dossie") data = await service.getDossier(query.id);
+      if (endpoint === "cargos") data = await service.getCargos(query);
+      if (endpoint === "residuos") data = await service.getResiduos(query);
       res.writeHead(200, {
         "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": "no-store",

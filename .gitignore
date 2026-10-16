@@ -19,3 +19,10 @@ Thumbs.db
 DATA_ORIGIN_MAP.md
 METRICS_GUIDE.md
 .vercel
+
+# Raw electoral/health preparation stays local; only aggregate releases are shipped.
+eleicoes-dados/dados/
+eleicoes-dados/.venv/
+eleicoes-dados/pipeline/atlas_imports/
+__pycache__/
+*.pyc

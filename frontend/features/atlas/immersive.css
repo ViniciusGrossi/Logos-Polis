@@ -1,4 +1,23 @@
 /* Atlas workbench. Scoped to the module: the Polis shell and other features retain their tokens. */
+.atlas-root {
+  --atlas-biv-0: #e8e8e8; --atlas-biv-1: #ace4e4; --atlas-biv-2: #5ac8c8;
+  --atlas-biv-3: #dfb0d6; --atlas-biv-4: #a5add3; --atlas-biv-5: #5698b9;
+  --atlas-biv-6: #be64ac; --atlas-biv-7: #8c62aa; --atlas-biv-8: #3b4994;
+  --atlas-context-0: #d4eeee; --atlas-context-1: #64c3c3; --atlas-context-2: #207575;
+}
+.atlas-context-legend { display:flex;flex-direction:column;gap:8px; }
+.atlas-context-legend > summary {cursor:pointer;padding:4px 0;}
+.atlas-context-legend > * {margin-bottom:8px;}
+.atlas-context-legend:not([open]) > :not(summary) {display:none;}
+.atlas-context-legend b {font:500 13px var(--atlas-font-sans);line-height:1.4;}
+.atlas-bivariate-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:3px;max-width:150px; }
+.atlas-bivariate-grid button {min-height:38px;border:1px solid transparent;color:var(--atlas-bg);font:600 12px var(--atlas-font-mono);cursor:pointer;border-radius:3px;}
+.atlas-bivariate-grid button:nth-child(-n+3) {color:var(--atlas-text);}
+.atlas-bivariate-grid button[aria-pressed="true"] {outline:2px solid var(--atlas-cyan);outline-offset:2px;}
+.atlas-bivariate-axis {font-size:11px;color:var(--atlas-muted);}
+.atlas-context-scale {display:flex;}
+.atlas-context-scale span {flex:1;min-height:28px;text-align:center;padding:5px;color:var(--atlas-bg);font-size:11px;}
+.atlas-context-scale span:last-child {color:var(--atlas-text);}
 .atlas-root.atlas-immersive {
   --atlas-glass: color-mix(in srgb, var(--atlas-panel-soft) 88%, transparent);
   --atlas-glass-border: color-mix(in srgb, var(--atlas-text) 12%, transparent);

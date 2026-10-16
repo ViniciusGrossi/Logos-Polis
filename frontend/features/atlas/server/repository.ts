@@ -1,10 +1,11 @@
 import { readFile, stat } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { gunzipSync } from "node:zlib";
 import path from "node:path";
 import { z } from "zod";
-import type { AtlasCatalog, AtlasGeometry, ContextDataset, ElectionMetric, Representation, Territory, ThemesDataset } from "../types";
+import type { AtlasCatalog, AtlasGeometry, ContextDataset, ElectionMetric, OfficeResult, Representation, Territory, ThemesDataset } from "../types";
 import { AtlasError } from "./errors";
-import { catalogSchema, contextSchema, geometrySchema, metricSchema, representationSchema, territorySchema, themesSchema, ufSchema } from "./schemas";
+import { catalogSchema, contextSchema, geometrySchema, metricSchema, officeSchema, representationSchema, territorySchema, themesSchema, ufSchema } from "./schemas";
 
 /** Sole filesystem boundary. Fixed filenames, validated content and mtime-aware per-process cache. */
 export class AtlasRepository {
@@ -33,9 +34,9 @@ export class AtlasRepository {
     const promise = (async () => {
       let data: unknown;
       try {
-        const content=await readFile(filename,"utf8");
-        if(directory===this.pinnedDirectory&&this.fileHashes&&createHash("sha256").update(content).digest("hex")!==this.fileHashes[relative])throw new AtlasError("SNAPSHOT_INVALID","Arquivo não corresponde ao manifesto da preparação.",503);
-        data = JSON.parse(content) as unknown;
+        const raw=await readFile(filename);
+        if(directory===this.pinnedDirectory&&this.fileHashes&&createHash("sha256").update(raw).digest("hex")!==this.fileHashes[relative])throw new AtlasError("SNAPSHOT_INVALID","Arquivo não corresponde ao manifesto da preparação.",503);
+        data = JSON.parse((relative.endsWith(".gz")?gunzipSync(raw):raw).toString("utf8")) as unknown;
       }
       catch(error) { if(error instanceof AtlasError)throw error;throw new AtlasError("SNAPSHOT_INVALID", "Arquivo da base local inválido. Uma nova preparação é necessária.", 503); }
       const parsed = schema.safeParse(data);
@@ -64,8 +65,8 @@ export class AtlasRepository {
       }
       let manifest: {snapshotId:string;files:Record<string,string>};
       try{
-        manifest=z.object({snapshotId:z.literal(id),files:z.record(z.string().regex(/^(catalog|territories|summary|context|themes|representation)\.json$|^(metrics|geometry)\/[A-Z]{2}\.json$/),z.string().regex(/^[0-9a-f]{64}$/))}).parse(JSON.parse(await readFile(path.join(directory,"manifest.json"),"utf8")));
-        if(!this.legacyFixtures&&Object.keys(manifest.files).length!==61)throw new Error("incomplete release");
+        manifest=z.object({snapshotId:z.literal(id),files:z.record(z.string().regex(/^(catalog|territories|summary|context|themes|representation)\.json$|^(metrics|geometry)\/[A-Z]{2}\.json$|^offices\/[A-Z]{2}\.json\.gz$/),z.string().regex(/^[0-9a-f]{64}$/))}).parse(JSON.parse(await readFile(path.join(directory,"manifest.json"),"utf8")));
+        if(!this.legacyFixtures&&![61,88].includes(Object.keys(manifest.files).length))throw new Error("incomplete release");
       }catch{throw new AtlasError("SNAPSHOT_INVALID","Manifesto da preparação inválido ou incompleto.",503);}
       this.pinnedDirectory=directory;
       this.fileHashes=manifest.files;
@@ -82,6 +83,16 @@ export class AtlasRepository {
     const parsed = ufSchema.safeParse(uf);
     if (!parsed.success || parsed.data === "BR") throw new AtlasError("INVALID_QUERY", "Selecione uma UF válida para os dados municipais.");
     return this.read(`metrics/${parsed.data}.json`, z.array(metricSchema));
+  }
+  /** Releases without cargos (61 files) answer OFFICES_UNAVAILABLE instead of an empty dataset. */
+  async getOffices(uf: string): Promise<OfficeResult[]> {
+    const parsed = ufSchema.safeParse(uf);
+    if (!parsed.success || parsed.data === "BR") throw new AtlasError("INVALID_QUERY", "Selecione uma UF válida para os cargos municipais.");
+    const catalog = await this.getCatalog();
+    const relative = `offices/${parsed.data}.json.gz`;
+    if (!catalog.offices || (this.fileHashes && !(relative in this.fileHashes)))
+      throw new AtlasError("OFFICES_UNAVAILABLE", "Cargos estaduais e legislativos não estão disponíveis nesta versão da base.", 404);
+    return this.read(relative, z.array(officeSchema));
   }
   getGeometry(uf: string): Promise<AtlasGeometry> {
     const parsed = ufSchema.safeParse(uf);

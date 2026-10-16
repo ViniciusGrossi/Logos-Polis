@@ -1,9 +1,9 @@
 import type { FeatureCollection, Geometry } from "geojson";
 
 export type ElectionRound = 1 | 2;
-export type AtlasTab = "atlas" | "evolucao" | "contexto" | "pautas";
+export type AtlasTab = "atlas" | "evolucao" | "cargos" | "contexto" | "pautas";
 export type AtlasIndicator = "winner" | "margin" | "turnout" | "abstention" | "blank" | "null";
-export type ContextIndicator = "income" | "education" | "density";
+export type ContextIndicator = "income" | "education" | "density" | "gdp" | "homicide";
 export interface Territory {
   id: string; name: string; level: "country" | "region" | "state" | "municipality" | "exterior";
   uf: string | null; tseCode: number | null; ibgeCode: number | null;
@@ -31,6 +31,42 @@ export interface AtlasCatalog {
   territories: Territory[];
   coverage: { resultsMunicipalities: number; mappedMunicipalities: number; issues: CoverageIssue[]; geometryEdition: string };
   sources: AtlasSource[]; methodology: string[];
+  offices?: { office: OfficeCode; label: string; elections: { year: number; rounds: ElectionRound[] }[] }[];
+}
+export type OfficeCode = 3 | 5 | 6 | 7 | 8;
+export type OfficeLine = "PT" | "PL";
+/** Compact tuples keep the per-UF file small: [name, party, votes, personKey]. */
+export type OfficeCandidate = [string, string, number, string | null];
+export type OfficePartyRow = [string, number, number];
+export interface OfficeResult {
+  territoryId: string; year: number; round: ElectionRound; office: OfficeCode; seats: number | null;
+  eligible: number; turnout: number; abstentions: number; blankVotes: number; nullVotes: number;
+  officialValidVotes: number; validVotes: number;
+  candidates: OfficeCandidate[]; parties: OfficePartyRow[];
+}
+export interface CargoLeader { name: string | null; party: string; votes: number; share: number | null; }
+export interface CargoRow {
+  territory: Territory;
+  office: { validVotes: number; officialValidVotes: number; turnout: number; leader: CargoLeader | null; lineVotes: number | null; lineShare: number | null; topCandidate: CargoLeader | null };
+  president: { validVotes: number; leader: CargoLeader | null; lineVotes: number | null; lineShare: number | null } | null;
+  /** Office participation of the line minus president participation, in pp. null when either is absent. */
+  splitPp: number | null;
+}
+export interface CargosDataset {
+  office: OfficeCode; year: number; round: ElectionRound; line: OfficeLine; seats: number | null;
+  level: "state" | "municipality"; rows: CargoRow[];
+  summary: { lineShare: number | null; presidentShare: number | null; splitPp: number | null; comparable: number; officeAbove: number; officeBelow: number; };
+  /** false when the line compares different electoral sides (PL 2018: PSL president × PL office). */
+  lineComparable: boolean;
+  president: { label: string | null; party: string };
+  caveats: string[];
+}
+export interface ResidualRow { territory: Territory; x: number; observed: number; expected: number; residualPp: number; }
+export interface ResiduosDataset {
+  year: number; line: OfficeLine; baseYear: number; label: string;
+  fit: { slope: number; intercept: number; r: number | null; n: number } | null;
+  rows: ResidualRow[];
+  summary: { n: number; meanResidualPp: number | null; positive: number; negative: number };
 }
 export type AtlasGeometry = FeatureCollection<Geometry, { id: string; name?: string }>;
 export interface AtlasMeta { snapshotId: string; source: string; methodology: string; generatedAt: string; }
@@ -56,15 +92,17 @@ export interface ComparisonDataset {
 }
 export interface ContextValue {
   territoryId: string; income: number | null; education: number | null; density: number | null;
+  gdp?: number | null; homicide?: number | null;
 }
 export interface ContextDataset {
   values: ContextValue[];
   indicators: { id: ContextIndicator; label: string; unit: string; period: string; sourceId: string; status: "available" | "unavailable" | "partial" }[];
   sources: AtlasSource[];
 }
-export interface ContextPoint { territory: Territory; x: number; y: number; weight: number; }
+export interface ContextPoint { territory: Territory; x: number; y: number; weight: number; votes?:number; votesBefore?:number; validVotesBefore?:number; }
 export interface CorrelationResult { n: number; coefficient: number | null; weighted: boolean; }
 export interface ContextAnalysis {
+  measure?: 'share' | 'delta';
   points: ContextPoint[]; national: CorrelationResult; regional: CorrelationResult;
   indicator: ContextDataset["indicators"][number]; missing: number;
   candidateLabel: string; methodology: string;

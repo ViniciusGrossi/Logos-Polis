@@ -318,6 +318,38 @@ async function verify() {
       assert.equal((body.data as DossierDataset).territory.id, "SUL");
     passed++;
   }
+  const officeRoutes = [
+    "cargos?uf=SP&year=2022&round=1&office=3&line=PT",
+    "cargos?uf=BR&year=2022&round=1&office=3&line=PT",
+    "cargos?uf=BR&year=2018&round=1&office=3&line=PL",
+    "residuos?uf=BR&year=2026&line=PT",
+  ];
+  for (const route of officeRoutes) {
+    step = `Cargos/resíduos sem sessão: ${route.split("?")[0]}`;
+    const denied = await request(`/api/atlas/${route}`);
+    assert.equal(denied.status, 401);
+    await checkCache(denied);
+    passed++;
+    step = `Cargos/resíduos autenticado: ${route}`;
+    const response = await request(`/api/atlas/${route}`, valid);
+    assert.equal(response.status, 200);
+    await checkCache(response);
+    const body = (await response.json()) as AtlasResponse<{ rows: unknown[] }>;
+    assert.equal(body.meta.snapshotId, localCatalog.snapshotId);
+    assert.ok(body.data.rows.length > 0, "Resposta sem linhas");
+    passed++;
+  }
+  for (const route of [
+    "cargos?uf=SP&year=2022&round=1&office=9&line=PT",
+    "cargos?uf=SP&year=2022&round=1&office=3&line=XX",
+    "residuos?uf=../SP&year=2026&line=PT",
+  ]) {
+    step = `Parâmetros inválidos: ${route.split("?")[0]}`;
+    const response = await request(`/api/atlas/${route}`, valid);
+    assert.equal(response.status, 400);
+    await checkCache(response);
+    passed++;
+  }
   for (const route of [
     "territorios?uf=../SP",
     "territorios?uf=SUDOESTE",

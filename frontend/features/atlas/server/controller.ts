@@ -31,6 +31,8 @@ export async function atlasController(endpoint: AtlasEndpoint, request: Request)
         parseAtlasQuery("pautas", search);
         return Response.json(await service.getThemes(), { headers });
       }
+      case "cargos": return Response.json(await service.getCargos(parseAtlasQuery("cargos", search)), { headers });
+      case "residuos": return Response.json(await service.getResiduos(parseAtlasQuery("residuos", search)), { headers });
       case "dossie": return Response.json(await service.getDossier(parseAtlasQuery("dossie", search).id), { headers });
     }
   } catch (error) {

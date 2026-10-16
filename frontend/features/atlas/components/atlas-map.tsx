@@ -15,7 +15,9 @@ import type {
   AtlasIndicator,
   ComparisonRow,
   TerritoryRecord,
+  ContextAnalysis,
 } from "../types";
+import { classifyContext, contextMapValues, contextClass, type ContextMapMode } from '../crossmap';
 import {
   candidateClass,
   candidatePct,
@@ -49,6 +51,7 @@ interface MapProps {
   progressive?: { year: number; round: 1 | 2 };
   municipalComparison?: ComparisonRow[];
   liveCamera?: boolean;
+  contextLayer?: {analysis:ContextAnalysis;mode:ContextMapMode};
 }
 interface MapPalette {
   pt: string;
@@ -194,6 +197,7 @@ export function AtlasMap({
   progressive,
   municipalComparison,
   liveCamera = false,
+  contextLayer,
 }: MapProps) {
   const container = useRef<HTMLDivElement>(null);
   const instance = useRef<LibreMap | null>(null);
@@ -242,6 +246,9 @@ export function AtlasMap({
   );
   const hoverRecord = activeHover ? byId.get(activeHover) : undefined;
   const hoverChange = activeHover ? changeById.get(activeHover) : undefined;
+  const contextModel = useMemo(()=>contextLayer ? classifyContext(contextLayer.analysis.points) : null,[contextLayer]);
+  const contextValues = useMemo(()=>contextLayer ? contextMapValues(contextLayer.analysis.points,contextLayer.analysis.measure) : null,[contextLayer]);
+  const hoverContext = activeHover ? contextValues?.get(activeHover) : undefined;
 
   useEffect(() => {
     if (!container.current) return;
@@ -513,6 +520,9 @@ export function AtlasMap({
       1,
       ...records.map((record) => record.metric?.validVotes ?? 0),
     );
+    const contextStyle=getComputedStyle(container.current);
+    const contextColors=Array.from({length:9},(_,i)=>contextStyle.getPropertyValue(`--atlas-biv-${i}`).trim());
+    const singleColors=Array.from({length:3},(_,i)=>contextStyle.getPropertyValue(`--atlas-context-${i}`).trim());
     const features = geometry.features.map((feature) => {
       const id = feature.properties.id;
       const record = byId.get(id);
@@ -521,7 +531,7 @@ export function AtlasMap({
       const value = indicatorValue(record, indicator);
       const candidateKey = candidateClass(candidate) as
         "pt" | "bolsonaro" | "other" | "neutral";
-      const color = delta
+      let color = delta
         ? changed?.deltaPp == null
           ? colors.neutral
           : changed.deltaPp < 0
@@ -539,6 +549,14 @@ export function AtlasMap({
           ? 0.38 + Math.min((margin(record?.metric) ?? 0) / 50, 1) * 0.55
           : 0.16 + Math.min((value ?? 0) / 100, 1) * 0.8;
       if (value === null && !delta) opacity = 0.2;
+      if(contextLayer && contextModel){
+        const point=contextValues?.get(id);
+        if(!point){color=colors.neutral;opacity=0.25;}
+        else{
+          const x=contextClass(point.x,contextModel.xCuts),y=contextClass(point.y,contextModel.yCuts);
+          color=contextLayer.mode==='bivariate'?contextColors[y*3+x]:singleColors[contextLayer.mode==='vote'?y:x];opacity=0.92;
+        }
+      }
       if (
         (changesOnly && !changed?.changed) ||
         (highlightedIds.length > 0 && !highlightedIds.includes(id))
@@ -610,6 +628,9 @@ export function AtlasMap({
     delta,
     changesOnly,
     ready,
+    contextLayer,
+    contextModel,
+    contextValues,
   ]);
 
   useEffect(() => {
@@ -736,14 +757,14 @@ export function AtlasMap({
         <div className="atlas-map-tooltip" aria-live="polite">
           <b>{hoverRecord.territory.name}</b>
           <span>
-            {delta && hoverChange
+            {contextLayer ? hoverContext ? `${new Intl.NumberFormat('pt-BR',{maximumFractionDigits:2}).format(hoverContext.x)} ${contextLayer.analysis.indicator.unit} · ${contextLayer.analysis.measure==='delta'?pp(hoverContext.y):pct(hoverContext.y)} ${contextLayer.analysis.candidateLabel}` : 'Sem par contextual disponível' : delta && hoverChange
               ? pp(hoverChange.deltaPp)
               : indicator === "winner"
                 ? `${displayName(winner(hoverRecord.metric)?.name ?? "Empate / sem dado")} · ${pct(indicatorValue(hoverRecord, indicator))}`
                 : pct(indicatorValue(hoverRecord, indicator))}
           </span>
           <small>
-            {validVotesLabel(hoverRecord.metric)}
+            {contextLayer && /^[A-Z]{2}$/.test(hoverRecord.territory.id) ? 'Mediana municipal do indicador; voto dos pares válidos. Não é taxa estadual.' : validVotesLabel(hoverRecord.metric)}
           </small>
         </div>
       )}

@@ -9,7 +9,10 @@ import type {
   ContextAnalysis,
   ContextPoint,
   DossierDataset,
+  CargosDataset,
   ElectionMetric,
+  OfficeResult,
+  ResiduosDataset,
   TerritoryDataset,
   ThemesDataset,
 } from "../types";
@@ -25,7 +28,8 @@ import {
 } from "../analytics";
 import { AtlasRepository } from "./repository";
 import { AtlasError } from "./errors";
-import type { ComparisonQuery, ContextQuery, TerritoryQuery } from "./schemas";
+import type { CargosQuery, ComparisonQuery, ContextQuery, ResiduosQuery, TerritoryQuery } from "./schemas";
+import { OFFICE_LABELS, PROPORTIONAL_OFFICES, cargoRow, isLineComparable, ols, presidentParty, summarizePresident } from "../cargos";
 import {
   regionForScope,
   regionTerritories,
@@ -400,12 +404,12 @@ export class AtlasService {
         for (const territory of territories) {
           const current =
             index.get(metricKey(territory.id, query.year, query.round)) ?? null;
-          const currentShare = candidateShare(current, "PT");
+          const currentShare = candidateShare(current, query.candidate === "PL" && query.year === 2018 ? "PSL" : query.candidate ?? "PT");
           const before = previous
             ? (index.get(metricKey(territory.id, previous, query.round)) ??
               null)
             : null;
-          const beforeShare = candidateShare(before, "PT");
+          const beforeShare = candidateShare(before, query.candidate === "PL" && previous === 2018 ? "PSL" : query.candidate ?? "PT");
           const y =
             query.measure === "share"
               ? currentShare
@@ -429,6 +433,11 @@ export class AtlasService {
               x,
               y,
               weight: current.validVotes,
+              votes: findCandidate(current,query.candidate==='PL' && query.year===2018?'PSL':query.candidate??'PT')!.votes,
+              ...(before && beforeShare!==null ? {
+                votesBefore:findCandidate(before,query.candidate==='PL' && previous===2018?'PSL':query.candidate??'PT')!.votes,
+                validVotesBefore:before.validVotes,
+              } : {}),
             });
         }
         const points = nationalPoints.filter((p) =>
@@ -440,12 +449,12 @@ export class AtlasService {
         const currentNomination =
           metrics
             .filter((m) => m.year === query.year && m.round === query.round)
-            .map((m) => findCandidate(m, "PT"))
+            .map((m) => findCandidate(m, query.candidate === "PL" && query.year === 2018 ? "PSL" : query.candidate ?? "PT"))
             .find((c) => c !== null) ?? null;
         const previousNomination =
           metrics
             .filter((m) => m.year === previous && m.round === query.round)
-            .map((m) => findCandidate(m, "PT"))
+            .map((m) => findCandidate(m, query.candidate === "PL" && previous === 2018 ? "PSL" : query.candidate ?? "PT"))
             .find((c) => c !== null) ?? null;
         const methodology = `Spearman com ranks médios nos empates; coeficiente não calculado com menos de 30 municípios ou variância zero. ${query.weighted ? "Sensibilidade ponderada: Pearson dos ranks ordinários com peso de votos válidos da eleição atual." : "Cada município tem o mesmo peso."} Associação municipal, sem inferência causal ou individual. Brasil e recorte estadual ou macrorregional usam amostras e ranks próprios. Indicador ${indicator.period}; eleição ${query.year}, ${query.round}º turno.`;
         return this.response(
@@ -453,6 +462,7 @@ export class AtlasService {
           {
             points,
             national: spearman(nationalPoints, query.weighted),
+            measure: query.measure,
             regional: spearman(points, query.weighted),
             indicator,
             missing: count - points.length,
@@ -466,6 +476,116 @@ export class AtlasService {
         );
       },
     );
+  }
+  async getCargos(query: CargosQuery): Promise<AtlasResponse<CargosDataset>> {
+    const catalog = await this.repository.getCatalog();
+    this.requireUf(catalog, query.uf);
+    if (!catalog.offices)
+      throw new AtlasError("OFFICES_UNAVAILABLE", "Cargos estaduais e legislativos não estão disponíveis nesta versão da base.", 404);
+    const available = catalog.offices.find((o) => o.office === query.office)?.elections.find((e) => e.year === query.year)?.rounds.includes(query.round);
+    if (!available) throw new AtlasError("ELECTION_UNAVAILABLE", "Cargo, eleição ou turno indisponível nesta versão da base.");
+    return this.cached(`${catalog.snapshotId}:cargos:${JSON.stringify(query)}`, async () => {
+      const municipalLevel = isStateScope(query.uf);
+      const states = catalog.territories.filter((t) => t.level === "state" && scopeContainsState(query.uf, t.id));
+      const selectedMetric = (m: ElectionMetric) => m.year === query.year && m.round === query.round;
+      const selectedOffice = (o: OfficeResult) => o.year === query.year && o.round === query.round && o.office === query.office;
+      const perState = await Promise.all(states.map(async (state) => ({
+        state,
+        offices: (await this.repository.getOffices(state.id)).filter(selectedOffice),
+        metrics: (await this.repository.getMetrics(state.id)).filter(selectedMetric),
+      })));
+      const rows = municipalLevel
+        ? (await this.repository.getTerritories())
+            .filter((t) => t.level === "municipality" && t.uf === query.uf)
+            .map((territory) => cargoRow(
+              territory,
+              perState[0].offices.filter((o) => o.territoryId === territory.id),
+              perState[0].metrics.filter((m) => m.territoryId === territory.id),
+              query.line, query.year,
+            ))
+        : perState.map(({ state, offices, metrics }) => cargoRow(state, offices, metrics, query.line, query.year));
+      const allOffices = perState.flatMap((p) => p.offices);
+      const allMetrics = perState.flatMap((p) => p.metrics);
+      const president = summarizePresident(allMetrics, presidentParty(query.line, query.year));
+      const comparable = rows.filter((r) => r.splitPp !== null);
+      // Summary only over territories where the line ran in both races; otherwise absent lines would count as zero votes.
+      const base = comparable.reduce((a, r) => ({
+        line: a.line + r.office.lineVotes!,
+        office: a.office + (PROPORTIONAL_OFFICES.includes(query.office) ? r.office.officialValidVotes : r.office.validVotes),
+        presidentLine: a.presidentLine + r.president!.lineVotes!,
+        president: a.president + r.president!.validVotes,
+      }), { line: 0, office: 0, presidentLine: 0, president: 0 });
+      const lineShare = base.office > 0 ? (base.line / base.office) * 100 : null;
+      const presidentShare = base.president > 0 ? (base.presidentLine / base.president) * 100 : null;
+      const lineComparable = isLineComparable(query.line, query.year);
+      const proportional = PROPORTIONAL_OFFICES.includes(query.office);
+      const caveats = [
+        proportional
+          ? "Proporcional: participação do partido = votos nominais + de legenda sobre o total oficial de votos válidos; legenda nunca é atribuída a pessoas. Federações aparecem partido a partido."
+          : "Majoritário: participação = votos válidos da candidatura sobre a soma dos votos nominais válidos do cargo.",
+        ...(query.office === 5 ? ["Senado: cada eleitor vota em até duas candidaturas quando há duas vagas; o denominador são as escolhas válidas, não eleitores."] : []),
+        "Diferença presidente × cargo = participação da linha partidária no cargo menos participação do candidato presidencial do mesmo partido, em pontos percentuais; descritiva, sem inferência de voto individual.",
+        ...(lineComparable ? [] : ["Linha PL em 2018: o candidato presidencial era do PSL; a comparação opõe lados eleitorais distintos e não é comparável."]),
+        "Mais votado no município não significa eleito: cargos proporcionais elegem por quociente na circunscrição. Resultados de 2026 são provisórios.",
+        ...(query.year === 2018 && query.office === 6 ? ["AM 2018, deputado federal: soma dos partidos supera o detalhe em 7.048 votos (divergência da fonte, documentada e não corrigida)."] : []),
+      ];
+      const data: CargosDataset = {
+        office: query.office, year: query.year, round: query.round, line: query.line,
+        seats: allOffices[0]?.seats ?? null,
+        level: municipalLevel ? "municipality" : "state",
+        rows,
+        summary: {
+          lineShare,
+          presidentShare,
+          splitPp: lineShare !== null && presidentShare !== null ? lineShare - presidentShare : null,
+          comparable: comparable.length,
+          officeAbove: comparable.filter((r) => r.splitPp! > 0).length,
+          officeBelow: comparable.filter((r) => r.splitPp! < 0).length,
+        },
+        lineComparable,
+        president: { label: president?.leader ? `${president.leader.name} (${president.leader.party})` : null, party: presidentParty(query.line, query.year) },
+        caveats,
+      };
+      return this.response(catalog, data, `${OFFICE_LABELS[query.office]} ${query.year}, ${query.round}º turno. ${caveats.join(" ")}`);
+    });
+  }
+  async getResiduos(query: ResiduosQuery): Promise<AtlasResponse<ResiduosDataset>> {
+    const catalog = await this.repository.getCatalog();
+    this.requireUf(catalog, query.uf);
+    this.requireElection(catalog, 2022, 1);
+    this.requireElection(catalog, query.year, 1);
+    return this.cached(`${catalog.snapshotId}:residuos:${JSON.stringify(query)}`, async () => {
+      const { territories, index } = await this.municipal(catalog, "BR");
+      const sample = territories.flatMap((territory) => {
+        if (!territory.comparable) return [];
+        const x = candidateShare(index.get(metricKey(territory.id, 2022, 1)) ?? null, query.line);
+        const y = candidateShare(index.get(metricKey(territory.id, query.year, 1)) ?? null, query.line);
+        return x !== null && y !== null ? [{ territory, x, y }] : [];
+      });
+      const fit = ols(sample);
+      const rows = fit
+        ? sample
+            .filter((p) => scopeContainsState(query.uf, p.territory.uf))
+            .map((p) => {
+              const expected = fit.intercept + fit.slope * p.x;
+              return { territory: p.territory, x: p.x, observed: p.y, expected, residualPp: p.y - expected };
+            })
+            .sort((a, b) => b.residualPp - a.residualPp)
+        : [];
+      const data: ResiduosDataset = {
+        year: query.year, line: query.line, baseYear: 2022,
+        label: `${query.line}: ${query.year} esperado a partir de 2022 (1º turno)`,
+        fit,
+        rows,
+        summary: {
+          n: rows.length,
+          meanResidualPp: rows.length ? rows.reduce((s, r) => s + r.residualPp, 0) / rows.length : null,
+          positive: rows.filter((r) => r.residualPp > 0).length,
+          negative: rows.filter((r) => r.residualPp < 0).length,
+        },
+      };
+      return this.response(catalog, data, "Resíduo = participação observada da linha em 2026 menos a esperada por regressão linear simples sobre a participação em 2022 (1º turno), ajustada em todos os municípios comparáveis do país; o recorte só filtra as linhas. Descritivo: desvio de um modelo de uma variável, sem causa nem inferência individual. 2026 provisório.");
+    });
   }
   async getThemes(): Promise<AtlasResponse<ThemesDataset>> {
     const catalog = await this.repository.getCatalog();
